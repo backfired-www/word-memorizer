@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>单词背诵 · 多单元版</title>
+<style>
+  .word-meta{
+  font-size:15px;color:var(--muted);margin:-12px 0 18px;
+  letter-spacing:.2px;line-height:1.6;
+  }
+  .dark .word-meta{color:#aaa;}
+  :root{
+    --primary:#4f46e5;
+    --primary2:#7c3aed;
+    --pink:#db2777;
+    --text:#1f2937;
+    --muted:#6b7280;
+    --card:#ffffff;
+    --border:#e6e8f0;
+    --shadow-sm:0 4px 14px rgba(31,41,55,.06);
+    --shadow-md:0 14px 34px rgba(31,41,55,.10);
+    --shadow-lg:0 26px 60px rgba(79,70,229,.16);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;}
+  body{
+    min-height:100vh;color:var(--text);padding:24px;
+    background:
+      radial-gradient(1100px 620px at 10% -10%, rgba(99,102,241,.18), transparent 55%),
+      radial-gradient(900px 520px at 96% 0%, rgba(236,72,153,.14), transparent 50%),
+      radial-gradient(900px 620px at 50% 115%, rgba(6,182,212,.14), transparent 55%),
+      #f4f6fc;
+    transition:background .45s,color .45s;
+  }
+  body.dark{
+    color:#e9ebf3;
+    background:
+      radial-gradient(1100px 620px at 10% -10%, rgba(99,102,241,.22), transparent 55%),
+      radial-gradient(900px 520px at 96% 0%, rgba(236,72,153,.16), transparent 50%),
+      radial-gradient(900px 620px at 50% 115%, rgba(6,182,212,.16), transparent 55%),
+      #0e1016;
+  }
+  /* 背诵内容在屏幕正中央，侧边栏固定在左侧不动 */
+  .app{position:relative;width:100%;}
+  .sidebar{
+  width:250px;flex-shrink:0;background:#fff;border-radius:18px;padding:18px;
+  box-shadow:var(--shadow-md);position:fixed;top:100px;left:24px;z-index:20;
+  max-height:calc(100vh - 96px);overflow:auto;   /* 下移后防止底部超出视口 */
+  transition:box-shadow .35s,transform .35s;
+  }
+  .dark .sidebar{background:#1e1e1e;box-shadow:0 8px 30px rgba(0,0,0,.45);}
+  .sidebar h2{font-size:18px;margin-bottom:12px;}
+  .sidebar label{display:block;font-size:13px;color:#666;margin:14px 0 6px;}
+  .dark .sidebar label{color:#aaa;}
+  .sidebar select{width:100%;padding:9px 10px;border-radius:10px;border:1px solid #d1d5db;background:#fff;color:#222;font-size:15px;outline:none;transition:.2s;}
+  .sidebar select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.15);}
+  .dark .sidebar select{background:#2d2d2d;color:#eee;border-color:#4a4f5a;}
+  .unit-info{margin-top:16px;font-size:13px;color:#666;line-height:1.7;}
+  .dark .unit-info{color:#aaa;}
+  .container{max-width:760px;margin:0 auto;padding:8px 4px 70px;}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:10px;}
+  .title{font-size:25px;font-weight:800;letter-spacing:.6px;
+    background:linear-gradient(120deg,var(--primary),var(--primary2) 55%,var(--pink));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .toggle-dark{padding:9px 14px;border-radius:999px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.85);color:var(--text);cursor:pointer;font-size:14px;font-weight:600;box-shadow:var(--shadow-sm);transition:.25s;}
+  .toggle-dark:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
+  body.dark .toggle-dark{background:rgba(45,48,58,.85);border-color:rgba(255,255,255,.1);color:#e9ebf3;}
+  .progress{margin-bottom:18px;font-size:14px;color:var(--muted);}
+  .progress-bar{height:12px;background:rgba(148,163,184,.32);border-radius:99px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.08);}
+  .progress-fill{height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#22c55e,#16a34a);transition:width .4s ease;position:relative;overflow:hidden;}
+  .progress-fill::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-100%);animation:shine 2.2s infinite;}
+  @keyframes shine{100%{transform:translateX(100%);}}
+  .slider-area{margin-bottom:14px;}
+  #wordSlider{width:100%;-webkit-appearance:none;appearance:none;height:8px;border-radius:99px;background:linear-gradient(90deg,var(--primary),var(--primary2));outline:none;cursor:pointer;}
+  #wordSlider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--primary);box-shadow:0 3px 8px rgba(0,0,0,.28);transition:transform .15s;}
+  #wordSlider::-webkit-slider-thumb:hover{transform:scale(1.18);}
+  #wordSlider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--primary);box-shadow:0 3px 8px rgba(0,0,0,.28);cursor:pointer;}
+  .current-pos{margin-bottom:12px;font-size:15px;color:var(--muted);text-align:center;}
+  .card{position:relative;overflow:hidden;background:var(--card);border-radius:22px;padding:48px 34px;box-shadow:var(--shadow-md);border:1px solid var(--border);text-align:center;min-height:300px;display:flex;flex-direction:column;justify-content:center;transition:transform .35s,box-shadow .35s;}
+  .card::before{content:"";position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,var(--primary),var(--primary2),var(--pink));}
+  .card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);}
+  .dark .card{background:#171922;}
+  .word-en{font-size:38px;font-weight:800;margin-bottom:22px;word-break:break-word;line-height:1.25;letter-spacing:.4px;}
+  .word-cn{font-size:19px;color:var(--muted);min-height:60px;line-height:1.7;padding:0 6px;}
+  .dark .word-cn{color:#bbb;}
+  .spelling-area{margin-top:30px;}
+  .spelling-meta{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;font-size:15px;color:var(--muted);flex-wrap:wrap;}
+  .dark .spelling-meta{color:#aaa;}
+  .spelling-row {display: flex;flex-wrap: wrap; justify-content: center;align-items: center;gap: 12px; /* 单词之间的间距 */width: 100%;padding: 0 10px; /* 左右留出一点安全边距 */}
+  /* 单个单词的容器，强制内部不换行，最大宽度不超过父容器 */
+  .word-group {display: flex;flex-wrap: nowrap; gap: 6px; /* 字母之间的间距 */justify-content: center;max-width: 100%; /* 关键：防止超长单词撑破容器 */}
+  /* 字母格子：默认 48px，空间不够时允许收缩，但不允许放大 */
+  .letter-cell {flex: 0 1 48px; min-width: 14px; /* 极限压缩到多小，防止完全挤没 */display: flex;}
+  /* 输入框：宽度 100% 跟随父容器，并解除 input 的最小宽度限制 */
+  .letter-cell input {width: 100%;min-width: 0; /* 最核心的一步：允许 input 突破浏览器默认最小宽度 */height: 58px;padding: 0;text-align: center;font-size: 24px; /* 字体稍微调小一点，防止在窄框里溢出 */font-weight: 700;font-family: inherit;text-transform: lowercase;color: inherit;border: 2px solid #d7dbe6;border-bottom-width: 4px;border-radius: 10px;background: #fff;outline: none;-webkit-appearance: none;appearance: none;box-shadow: 0 3px 6px rgba(0,0,0,.05);transition: .15s;}  /* 移动端适配 */
+  @media(max-width: 820px) {.letter-cell { width: 38px; min-width: 20px; }.letter-cell input { height: 52px; font-size: 22px; }} 
+  .letter-cell input:focus{border-color:var(--primary);background:#eef2ff;box-shadow:0 0 0 4px rgba(79,70,229,.15);}
+  .dark .letter-cell input:focus{background:#2a2f3d;}
+  .letter-cell.correct input{border-color:#16a34a;background:#f0fdf4;color:#15803d;box-shadow:0 0 0 4px rgba(22,163,74,.12);}
+  .dark .letter-cell.correct input{background:#14271d;}
+  .letter-cell.wrong input{border-color:#dc2626;background:#fef2f2;color:#b91c1c;box-shadow:0 0 0 4px rgba(220,38,38,.12);animation:shake .3s;}
+  .dark .letter-cell.wrong input{background:#2a1414;}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+  .fixed-cell {display: inline-flex;align-items: center;justify-content: center;min-width: 14px;height: 58px;font-size: 24px;font-weight: 700;color: #9ca3af;user-select: none;} 
+  .spelling-check{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;color:white;background:#9ca3af;opacity:0;transform:scale(.4);transition:.3s;}
+  .spelling-check.show{opacity:1;transform:scale(1);background:#16a34a;box-shadow:0 2px 8px rgba(22,163,74,.5);}
+  .hidden-cn{color:transparent;}
+  .hidden-en{color:transparent;}
+  .btns{margin-top:28px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;}
+  button{padding:11px 18px;border-radius:12px;border:none;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.08);transition:transform .15s,filter .15s,box-shadow .15s;}
+  button:hover{transform:translateY(-2px);filter:brightness(1.06);box-shadow:0 10px 22px rgba(0,0,0,.16);}
+  button:active{transform:translateY(0) scale(.98);}
+  button:focus-visible{outline:3px solid rgba(79,70,229,.55);outline-offset:2px;}
+  kbd{display:inline-block;padding:2px 8px;border-radius:8px;background:rgba(148,163,184,.28);border:1px solid rgba(0,0,0,.12);border-bottom-width:2px;font-family:inherit;font-size:12px;color:inherit;}
+  .dark kbd{background:rgba(148,163,184,.2);border-color:rgba(255,255,255,.14);color:#dfe3ee;}
+  .spelling-area.hidden-spelling{display:none;}
+  .btn-spell.hidden{display:none;}
+  .spelling-hint{margin-top:16px;font-size:13px;color:#8a909c;text-align:center;}
+  .dark .spelling-hint{color:#7d8595;}
+  .card .hidden-cn,.card .hidden-en{color:transparent !important;-webkit-text-fill-color:transparent;}
+  .btn-blue{background:linear-gradient(135deg,#3b82f6,#4f46e5);color:#fff;}
+  .btn-green{background:linear-gradient(135deg,#22c55e,#15803d);color:#fff;}
+  .btn-gray{background:linear-gradient(135deg,#a1a8b8,#6b7280);color:#fff;}
+  .btn-red{background:linear-gradient(135deg,#f87171,#dc2626);color:#fff;}
+  .btn-orange{background:linear-gradient(135deg,#fb923c,#f97316);color:#fff;}
+  .btn-pink{background:linear-gradient(135deg,#f472b6,#db2777);color:#fff;}
+  .fav-book{margin:42px auto 0;max-width:560px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:22px;box-shadow:var(--shadow-sm);}
+  .dark .fav-book{background:#171922;}
+  .fav-book h3{margin-bottom:14px;font-size:16px;font-weight:700;}
+  .fav-item{padding:9px 12px;margin:6px 0;background:#f3f4f6;border-radius:10px;cursor:pointer;transition:.2s;}
+  .dark .fav-item{background:#21242e;}
+  .fav-item:hover{opacity:.85;transform:translateX(3px);}
+  .empty-fav{color:#888;font-size:14px;}
+  /* 响应式：窄屏时侧边栏移到顶部，内容在下方居中，避免与侧边栏重叠 */
+  @media(max-width:1300px){
+    .app{display:flex;flex-direction:column;align-items:center;}
+    .sidebar{position:static;width:100%;max-width:460px;margin:0 auto 24px;}
+    .container{width:100%;max-width:760px;padding:0 4px 60px;}
+  }
+  @media(max-width:820px){
+    body{padding:14px;}
+    .card{padding:34px 18px;min-height:280px;}
+    .word-en{font-size:30px;}
+    .word-cn{font-size:17px;}
+    .letter-cell input{width:40px;height:52px;font-size:22px;}
+    .fav-book{max-width:100%;}
+    .btns button{flex:1 1 auto;}
+    .letter-cell { flex: 0 1 38px; } 
+    .letter-cell input { height: 52px; font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <h2>📚 选择背诵内容</h2>
+    <label for="bookSelect">课本</label>
+    <select id="bookSelect"></select>
+    <label for="unitSelect">单元</label>
+    <select id="unitSelect"></select>
+    <div class="unit-info" id="unitInfo">--</div>
+  </aside>
+
+  <main class="container">
+    <header>
+      <div class="title">单词卡背诵</div>
+      <button class="toggle-dark" onclick="toggleDark()">🌓 深色模式</button>
+    </header>
+
+    <div class="slider-area">
+      <input type="range" id="wordSlider" min="1" value="1">
+    </div>
+
+    <div class="current-pos" id="currentPos">当前：第 1 / 0 个单词</div>
+
+    <div class="progress">
+      <div>进度：<span id="progressText">0 / 0</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="word-en" id="en">--</div>
+      <div class="word-meta" id="meta"></div>
+      <div class="word-cn" id="cn">--</div>
+      <div class="spelling-area" id="spellingArea">
+        <div class="spelling-meta">
+          <span>共 <b id="spellingTotal">0</b> 个字母</span>
+          <span>·</span>
+          <span>已填对 <b id="spellingDone">0</b> 个</span>
+          <span class="spelling-check" id="spellingCheck"></span>
+        </div>
+        <div class="spelling-row" id="spellingRow"></div>
+        <div class="spelling-hint">全部填对后按 <kbd>Enter</kbd> 自动进入下一个单词</div>
+      </div>
+    </div>
+
+    <div class="btns">
+      <button class="btn-gray" onclick="prevWord()">上一个</button>
+      <button class="btn-blue" onclick="showCn()">显示释义</button>
+      <button class="btn-orange" onclick="toggleMaskMode()">切换模式</button>
+      <button class="btn-blue" onclick="nextWord()">下一个</button>
+      <button class="btn-gray btn-spell" onclick="clearSpelling()">🧹 清空拼写</button>
+      <button class="btn-green" onclick="knowIt()">✅ 记住了</button>
+      <button class="btn-pink" onclick="toggleFavorite()">⭐ 收藏</button>
+      <button class="btn-red" onclick="resetAll()">重置全部</button>
+    </div>
+
+    <div class="fav-book">
+      <h3>⭐ 收藏本</h3>
+      <div id="favList" class="fav-list"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ==================== 词库 ====================
+   数据格式：[英文, 中文]
+   已按课本、单元分组；已删除明显人名、地名等专有名词条目。
+   注意：课本一在前，课本二在后，以满足“先第一本书再第二本书”的顺序。
+*/
+const wordBank = {
+  "课本一": {
+    "U1": [
+      ["ambition","决心，抱负，雄心；追求，夙愿，理想"],
+      ["ambitious","有抱负的；雄心勃勃的"],
+      ["someday","将来有一天；有朝一日"],
+      ["matter-of-factly","不带感情地；实事求是地"],
+      ["biology","生物学"],
+      ["resolve","解决（问题、困难）"],
+      ["fiction","小说"],
+      ["freshman","高中 / 大学一年级学生"],
+      ["pretend","假装；装作"],
+      ["desperate","极其需要的；锲而走险的，拼命的，绝望的"],
+      ["buddy","朋友，伙伴"],
+      ["entertaining","使人愉快的；有趣的"],
+      ["apologetic","道歉的；愧疚的"],
+      ["attain","（长期努力）获得，赢得"],
+      ["determination","坚毅；毅力"],
+      ["realistic","现实的；实事求是的"],
+      ["ethologist","动物行为学家"],
+      ["jungle","丛林"],
+      ["fated","命中注定的"],
+      ["adventurous","爱冒险的；大胆创新的"],
+      ["exotic","异国的；外国情调的"],
+      ["string","一系列；线，细绳，带子；串起"],
+      ["conflict","抵触，冲突，矛盾"],
+      ["whole-heartedly","全心全意地；全力以赴地"],
+      ["single-mindedly","一心一意地；专心致志地"],
+      ["greedy","贪婪的；贪心的"],
+      ["chaotic","混乱的；毫无秩序的"],
+      ["overdue","迟到的；延误的；过期未完成的"],
+      ["mature","成熟的；理智的"],
+      ["assign","分配；分派（任务）"],
+      ["pediatrician","儿科医生"],
+      ["best-seller","畅销书；畅销产品"],
+      ["anymore","（否定句）再也不；不再"],
+      ["be sb.'s for the asking","只要提出要求就能得到"],
+      ["hit it big","大获成功"],
+      ["to tell (you) the truth","老实说；实话对你讲"],
+      ["leave behind","忘记带走；留下"],
+      ["sit back","袖手旁观；不采取行动"],
+      ["for one reason or another","由于这样或那样的原因"],
+      ["grab for","抓住；立即接受"],
+      ["come to terms with","接受（令人不快的现实）；妥协"],
+      ["Secretary of State","国务卿"],
+      ["strive","努力；奋斗"],
+      ["best-selling","畅销的"],
+      ["appealing","吸引人的；有趣的"],
+      ["tongue","舌头"],
+      ["depression","忧郁，沮丧；消沉"],
+      ["isolation","孤独；孤单；隔离"],
+      ["employee","雇员；受雇者"],
+      ["philosopher","哲学家"],
+      ["unfold","展开；逐渐呈现；展示"],
+      ["mindset","思维模式"],
+      ["lessen","（使）降低；（使）减少"],
+      ["emotional","情绪上的；情感上的"],
+      ["perceive","察觉；注意到；看待，理解"],
+      ["heroic","英雄的；英勇的"],
+      ["consistent","一贯的；一致的"],
+      ["sustainable","可持续的"],
+      ["fitness","健康；健壮"],
+      ["creativity","创造力；独创性"],
+      ["marathon","马拉松"],
+      ["literally","确实；照字面意思"],
+      ["overextend","做得过分；使…使用过头"],
+      ["obsess","使痴迷；使心神不宁"],
+      ["maximum","最大量的；最大限度的"],
+      ["workout","体育锻炼；训练"],
+      ["unlike","与…不同"],
+      ["paradox","矛盾；悖论；似非而是的说法"],
+      ["perform","表现；运转；表演；演出"],
+      ["chase","努力赢得；设法获得；追逐，追捕"],
+      ["grounded","清醒理智的；理性克制的"],
+      ["productive","多产的；富有成效的"],
+      ["ethos","精神特质；道德意识"],
+      ["hold back","阻碍某人 / 某事发展"],
+      ["roll / trip off the tongue","顺口"],
+      ["be/get burned out","精疲力竭"],
+      ["the here and now","现时"],
+      ["come up short","未能赢取；未能获得"],
+      ["add up","积累；积少成多"],
+      ["string together","把…拼在一起"],
+      ["prior to","在…以前"],
+      ["at peace","心平气和的"],
+      ["quite / just the opposite","正好 / 完全相反"],
+      ["run / be go counter to","与某事背道而驰"]
+    ],
+    "U2": [
+      ["dispute","争议；争论；争端；纠纷"],
+      ["indisputable","无可争辩的；不可否认的"],
+      ["explanation","解释；说明"],
+      ["straightforward","简单的；易懂的"],
+      ["economics","经济学"],
+      ["economy","经济"],
+      ["squeeze","挤；捏"],
+      ["engage","（使）从事，参加"],
+      ["dominate","支配；控制；左右；影响"],
+      ["manufacture","（用机器大量）生产，制造"],
+      ["manufacturing","制造业"],
+      ["harvest","收割；收割；收获季节"],
+      ["ripe","（水果或庄稼）成熟的"],
+      ["infinite","无限的"],
+      ["incoming","（消息）收到的"],
+      ["mobile","与移动电话等技术有关的"],
+      ["handle","处理；应付"],
+      ["to-do list","待办清单"],
+      ["inevitably","不可避免地；必然地"],
+      ["overwhelm","压垮；使应接不暇"],
+      ["finite","有限的；有限制的"],
+      ["demonstrate","说明；证明；论证；证实"],
+      ["ironic","出乎意料的，令人啼笑皆非的"],
+      ["economist","经济学家"],
+      ["scarcity","不足；短缺"],
+      ["commitment","承诺"],
+      ["priority","优先事项"],
+      ["prioritise","优先考虑；优先处理"],
+      ["crucial","至关重要的；关键性的"],
+      ["infect","使感染（某种感情）；影响"],
+      ["leisure","空闲；闲暇"],
+      ["recovery","恢复；康复"],
+      ["epidemic","（坏事的突然）泛滥，蔓延；（传染病的）流行，传播"],
+      ["ultimate","最好的；极端的；最后的；终极的"],
+      ["status","地位；身份；职位"],
+      ["badge","象征；徽章；证章"],
+      ["indicator","指示物"],
+      ["absurd","荒唐的；愚蠢的"],
+      ["locksmith","锁匠"],
+      ["fee","报酬；服务费"],
+      ["complain","抱怨；不满；发牢骚"],
+      ["regain","重新获得"],
+      ["access","接近；进入"],
+      ["squeeze in","为…挤出时间"],
+      ["get through","完成（工作）；处理（事情）"],
+      ["weigh down","使忧心忡忡"],
+      ["take on","接受（工作）；承担（责任）"],
+      ["end up","最终处于，到头来"],
+      ["throw in","额外赠送"],
+      ["in part","在某种程度上；部分地"],
+      ["stroll","散步；闲逛"],
+      ["leisurely","不慌不忙地；不慌不忙的"],
+      ["ulcer","溃疡"],
+      ["fingernail","手指甲"],
+      ["abuse","虐待"],
+      ["wimp","懦夫；窝囊废"],
+      ["luggage","行李"],
+      ["practically","几乎；差不多"],
+      ["fuss","无谓的激动（或忧虑、活动）；大惊小怪"],
+      ["crush","（使）变皱，起皱；压坏；压伤；挤压变形"],
+      ["self","自身；本身；自己；自我"],
+      ["conspiracy","密谋；阴谋"],
+      ["airline","航空公司"],
+      ["embarrass","（尤指在社交场合）使尴尬，使窘迫"],
+      ["embarrassment","尴尬；难堪；窘迫"],
+      ["embarrassed","窘迫的；尴尬的"],
+      ["corridor","走廊；通道"],
+      ["stumble","绊倒；绊跌"],
+      ["occupy","使用，占用；占据；居住"],
+      ["unoccupied","空着的；闲置的；无人占用的"],
+      ["gut","勇气，魄力，决心"],
+      ["snap","厉声说；（使）啪的一声折断；（给…）拍照"],
+      ["lifetime","终身；有生之年；存在期"],
+      ["take off","（飞机）起飞"],
+      ["make a fuss (about sth.)","（因某事）大吵大闹，大惊小怪"],
+      ["show up","到达（尤指有人在等候之处）"],
+      ["make it","（尤指在困难情况下）准时到达，赶上"],
+      ["in advance (of sth.)","预先；提前"]
+    ],
+    "U3": [
+      ["wrestle","（与某人）摔跤，扭打"],
+      ["outcome","（讨论、战争等无法预知的）结果，后果"],
+      ["tense","使（肌肉）绷紧；僵硬；令人紧张的；令人不安的；令人着急的"],
+      ["strain","使劲；竭力；用尽全力；拉伤；扭伤"],
+      ["wrist","腕（关节）"],
+      ["grin","露齿而笑；咧着嘴笑"],
+      ["teen","青少年时期；（青）少年；十几岁的孩子"],
+      ["athletic","强壮的；擅长运动的"],
+      ["athleticism","运动能力"],
+      ["gasp","急促吸气；大声吸气，倒抽气"],
+      ["recall","回想，回忆起（某事物）"],
+      ["clip","（从报纸、杂志等上）剪下"],
+      ["clipping","剪报"],
+      ["underline","在…之下画线（以示重要）"],
+      ["helmet","头盔；钢盔；安全帽"],
+      ["grapple","扭打；搏斗"],
+      ["ritual","惯例；老规矩；例行公事；仪式，典礼"],
+      ["competitive","好竞争的；求胜心切的"],
+      ["palm","手掌；掌部"],
+      ["twist","扭动（身体）"],
+      ["wrap","（用手臂、腿或手指）围住（某物）；（用纸或布）包，裹（某物）"],
+      ["grip","紧握；紧抓"],
+      ["elbow","肘"],
+      ["indentation","凹口；凹陷；缺口"],
+      ["itchy","令人发痒的；发痒的"],
+      ["defeat","失败"],
+      ["yield","（因外力或受压而）移动，弯曲，断裂；屈服；让步；产生，得出（结果、答案或消息）"],
+      ["steady","稳定的；牢固的；不摇晃的；平稳的；持续的；逐渐的"],
+      ["unsteadily","颤抖地；抖动地"],
+      ["unexpected","想不到的；意外的；突然的"],
+      ["handshake","握手"],
+      ["suck","吸；吮；啜"],
+      ["brace","（准备）迎接（令人不快的事）"],
+      ["embrace","拥抱；抱；拥抱"],
+      ["throat","喉咙；咽喉"],
+      ["sadness","悲伤；悲痛"],
+      ["dresser","梳妆台；衣橱"],
+      ["sling","（松松垮垮地）挂，吊，悬；（随意而稍用力地）扔，掷，抛"],
+      ["oversized","大于一般的；太大的"],
+      ["sunglasses","太阳镜；墨镜"],
+      ["entire","全部的；整个的"],
+      ["porch","游廊；走廊；阳台；有顶的入口，门廊"],
+      ["carton","硬纸盒；塑料盒"],
+      ["rewind","倒回（录音带或录像带）"],
+      ["sip","小口地喝；抿"],
+      ["patio","（房屋外面的）露台，平台"],
+      ["seagull","海鸥"],
+      ["rail","铁路系统"],
+      ["obligation","（道义或法律上的）义务，职责，责任"],
+      ["reassure","使安心；使放心；使消除疑虑"],
+      ["handwritten","手写的"],
+      ["shamelessly","无耻地；不知羞耻地"],
+      ["drunk","喝醉的"],
+      ["thunderstorm","雷暴；雷雨"],
+      ["cuddle","抱，拥抱，搂抱"],
+      ["dependent","取决于某物；依靠的；依赖的"],
+      ["pick up","搭载；接载"],
+      ["work against","有效地对抗；击败"],
+      ["lift off","（飞机）起飞；（航天器）升空"],
+      ["stay up","熬夜；深夜不睡觉"],
+      ["settle for","勉强接受；将就"],
+      ["within walking distance","在步行距离之内"],
+      ["on one's mind","挂在心上的；惦念的"],
+      ["at the top of one's lungs","尽量大声地；放声地"],
+      ["cuddle up","偎依"]
+    ],
+    "U4": [
+      ["browse","随意翻阅，浏览（书刊等）"],
+      ["longing","渴望；盼望"],
+      ["aisle","通道；过道"],
+      ["flick","轻击，轻拍，轻拂，轻弹"],
+      ["restless","不安宁地，烦躁地，不耐烦地"],
+      ["fatigue","厌倦；疲劳；疲乏；劳累"],
+      ["paralysis","瘫痪，停顿；麻痹"],
+      ["donkey","驴"],
+      ["unable","无能力（做某事）的"],
+      ["hay","（作动物饲料用的）干草，饲草"],
+      ["boast","夸口；夸耀；吹嘘"],
+      ["fingertip","指尖"],
+      ["confusion","困惑；不确定；混乱"],
+      ["replicate","重做；重复；复证（某个结果）"],
+      ["pension","养老金；退休金"],
+      ["motivate","激发；激励；促动；成为…的动机"],
+      ["demotivate","使人失去动力；使人消极"],
+      ["cyberspace","网络空间"],
+      ["stack","（使）整齐地堆起；摆起；一叠；一堆；一摞"],
+      ["realm","（知识、活动、思想的）领域，范围"],
+      ["annoy","使恼怒；使生气"],
+      ["annoying","讨厌的；令人气恼的"],
+      ["dominance","优势；显要；突出"],
+      ["format","（计算机信息存储）格式；总体安排；计划；设计"],
+      ["boom","（生意）繁荣，兴旺，激增"],
+      ["appeal","感染力；吸引力；呼吁；恳求"],
+      ["define","确定；说明；界定"],
+      ["lower","降低；减少"],
+      ["approval","赞许；赞成；同意；批准；认可"],
+      ["fist","拳头"],
+      ["high-rise","高耸的；高层的"],
+      ["dusk","黄昏；傍晚"],
+      ["trickle","（人、车辆、货物等）缓慢而零星地移动；滴；涓涓地流"],
+      ["scribble","潦草地写"],
+      ["arrow","（指示方向的）箭号，箭头；箭；矢"],
+      ["brainstorm","头脑风暴；灵感；突然想到的妙计"],
+      ["halfway","（空间或时间的）中间（的），半途（的）"],
+      ["consult","当顾问；咨询；请教"],
+      ["oyster","牡蛎；蚝"],
+      ["argument","论点；论据；争论；争吵；争辩"],
+      ["management","（对公司或组织的）经营，管理"],
+      ["straddle","包括，跨越（不同领域、团体、时间等）；跨坐；跨立"],
+      ["invest","投入（大量时间、精力、金钱等）；投资"],
+      ["existential","关于人类存在的；存在主义的"],
+      ["gratefully","感谢地；感激地"],
+      ["executive","（机构或公司的）主管，经理"],
+      ["educational","教育的"],
+      ["abundant","充裕的；丰富的"],
+      ["consultation","商量，磋商；咨询"],
+      ["assumption","假定；假设"],
+      ["necessity","必需品"],
+      ["logically","按照逻辑地；合乎逻辑地"],
+      ["sacrifice","牺牲；献出"],
+      ["surrender","（被迫）放弃；投降"],
+      ["stuck","不知所措的；（为某事）犯愁的；卡住的；无法移动的；动不了的"],
+      ["simultaneously","同时发生地；同步地"],
+      ["contradictory","矛盾的；抵触的"],
+      ["sb. can't help but do sth. / can't help (doing) sth.","某人忍不住做某事；某人不能停止做某事"],
+      ["stick with","继续做；不放弃"],
+      ["have sth. at one's fingertips","手头有某物（可供随时使用）；对某物了如指掌"],
+      ["set in","（尤指不愉快的事）开始，来临"],
+      ["the world is sb.'s oyster","可以随心所欲；想要什么就能得到什么"],
+      ["fit in","安排时间做（某事）；安排时间见（某人）；找出…的时间"],
+      ["in passing","（在谈论别的事情时）顺便说起某事物，附带提及某事物"],
+      ["by default","由于没有采取行动（而发生某事）"],
+      ["step in","介入；干涉；插手"]
+    ]
+  },
+  "课本二": {
+    "U1": [
+      ["entrepreneur","企业家"],
+      ["mistaken","意见（或判断）错误的，弄错的"],
+      ["mistakenly","错误地；曲解地；被误解地"],
+      ["wormhole","虫洞（宇宙中可能存在的连接遥远空间的通道）"],
+      ["sprawl","（建筑群）杂乱地延伸（扩展）；（懒洋洋地或漫不经心地）摊开手脚躺（坐）着"],
+      ["wander","徘徊；闲逛；漫步于"],
+      ["stall","（尤指集市上的）货摊，摊位，售货亭"],
+      ["spectrum","（观点、人、情况等的）范围，幅度"],
+      ["cord","电线；粗线；细绳；索；带"],
+      ["assemble","组装；装配；集合；聚集"],
+      ["amid","在…之中；被…所环绕；在（嘈杂、纷乱的事件）中"],
+      ["glitter","闪烁；闪光"],
+      ["glittering","闪耀的"],
+      ["holdout","抵制者（或组织）；不合作者（或组织）"],
+      ["clone","复制；模仿；克隆"],
+      ["innovation","革新；创新；新观念；新方法；新发明"],
+      ["coexist","共存；共处"],
+      ["increasingly","不断增加地；越来越多地"],
+      ["poised","准备好的；蓄势待发的；摆好姿势准备行动的"],
+      ["artificial","人造的；人工的"],
+      ["artificial intelligence","人工智能"],
+      ["drone","无人机；发出持续的嗡嗡声；嗡嗡作响"],
+      ["miracle","意外的幸运事；不可思议的事；奇迹"],
+      ["impetus","刺激；推动（力）；促进"],
+      ["unrecognizable","（变得）不能识别的，认不出来的"],
+      ["reign","支配；盛行；为王；为君"],
+      ["supreme","（权力、重要性或影响力）最高的，至高无上的"],
+      ["sector","（尤指商业、贸易等领域的）部门，行业"],
+      ["glimmer","（希望等的）微弱迹象，一丝"],
+      ["accomplish","（尤指通过努力）完成，实现"],
+      ["feat","业绩；功绩；壮举"],
+      ["transform","使改观；使变形；使转化；改观；变形；转化"],
+      ["momentum","动力；势头"],
+      ["consecutive","连续的；不间断的"],
+      ["hub","（地域、系统、活动等的）中心，枢纽"],
+      ["overnight","突然；一下子；在夜间"],
+      ["impressively","令人钦佩地"],
+      ["burgeon","快速增长（发展）"],
+      ["breakthrough","突破；重大进展"],
+      ["aerospace","航空航天工业；宇航工业"],
+      ["profound","巨大的；重大的；深远的；深切的"],
+      ["evolve","逐步形成；逐渐演变；（植物、动物等）进化，进化形成"],
+      ["envision","想象，展望（尤指美好的事）"],
+      ["consensus","共同意见；一致看法；共识"],
+      ["head-to-head","正面交锋地；正面交锋的"],
+      ["ranking","排行；排名；名次"],
+      ["workforce","（行业的）全体从业人员；（公司的）全体员工；（国家或地区的）劳动力"],
+      ["dogged","顽强的；不屈不挠的；坚持不懈的"],
+      ["packed with","充满…的"],
+      ["for now","目前；暂时"],
+      ["reign supreme","主宰；称雄；呈极盛之势"],
+      ["in the long / short / medium term","长期 / 短期 / 中期"],
+      ["(it’s) no / small / little wonder (that)","并不奇怪；不足为奇"],
+      ["millennial","千禧一代"],
+      ["reminisce","谈论、追忆（快乐的往事）"],
+      ["regretfully","遗憾地；惋惜地"],
+      ["remark","说起，谈到（尤指刚察觉的事）；言论；意见；评论"],
+      ["phenomenon","现象"],
+      ["outpouring","大量涌现；迸发；（强烈感情的）流露，倾吐"],
+      ["spontaneous","自发的；自然而生的；一时冲动的"],
+      ["amazement","吃惊；惊奇"],
+      ["hardship","艰苦；贫困"],
+      ["downturn","（经济、商业等活动的）下降，衰退"],
+      ["per annum","每年"],
+      ["sole","唯一的"],
+      ["capacity","能力；才能；容量；容积；容纳人数"],
+      ["youngster","孩童；年轻人"],
+      ["sophisticated","见多识广的；老练的；练达的"],
+      ["individualistic","个人主义的"],
+      ["entrepreneurial","具有创业素质的"],
+      ["confident","有信心的；自信的；确信的；有把握的"],
+      ["daunting","使人气馁的；吓人的"],
+      ["navigate","理解，应付（困难复杂的情况）；导航，指引方向"],
+      ["entitled","应得的，有权利的，有资格的"],
+      ["attribute","认为…具有…的特征；把…归因于…"],
+      ["savvy","有见识的；在行的；实际知识和能力；见识"],
+      ["progressive","进步的，先进的"],
+      ["deem","认为；视为"],
+      ["self-centered","自我中心的；自私的"],
+      ["considerable","相当大的（尤指能产生影响或很重要）"],
+      ["trendy","时髦的；受新潮思想影响的"],
+      ["craze","时尚，风靡一时的事物；一时的狂热"],
+      ["consumption","购买；消费；消耗量"],
+      ["forecast","预测；预报；预测；预报"],
+      ["aspiration","强烈愿望；志向；抱负"],
+      ["furthermore","此外；而且；不仅如此；更有甚者"],
+      ["e-commerce","电子商务"],
+      ["other than","除了…以外"],
+      ["in / by contrast (to / with)","相比之下"],
+      ["as compared to / with","相比于"],
+      ["speak to","与…产生共鸣；与…产生情感联结"]
+    ],
+    "U2": [
+      ["passionate","热情的；感情强烈的"],
+      ["reunion","团聚；重逢"],
+      ["singular","单个的；独一无二的"],
+      ["stern","严厉的；严格的"],
+      ["fretful","令人烦恼的，发牢骚的"],
+      ["refugee","难民；避难者"],
+      ["overloaded","超负荷的"],
+      ["lifeboat","救生艇（船）"],
+      ["grasp","理解；领会；抓紧"],
+      ["queue","排队"],
+      ["wherever","无论在哪里"],
+      ["orderly","有条理的；整齐的"],
+      ["scramble","争夺；抢夺"],
+      ["aboard","在（船、飞机、火车）上；上船／飞机／火车"],
+      ["ignorant","无知的；愚昧的"],
+      ["childlike","孩子般的；天真无邪的"],
+      ["impulse","冲动"],
+      ["bounce","（使）弹起；（使）反弹；（使）弹跳"],
+      ["exist","存在"],
+      ["existence","存在；实有"],
+      ["endanger","使处于险境；危及"],
+      ["reliably","可靠地；可信地"],
+      ["charm","魅力；吸引力；拼图玩具"],
+      ["puzzle","使困惑；使迷惑"],
+      ["sniff","嗅；闻；抽鼻子"],
+      ["tuck","把...放进、收起来"],
+      ["casual","随便的；随意的"],
+      ["serendipity","机缘巧合"],
+      ["devour","如饥似渴地阅读；狼吞虎咽地吃"],
+      ["snapshot","快照；简介"],
+      ["fossil","化石"],
+      ["transition","过渡；转变"],
+      ["volcanic","火山的；由火山作用引起的"],
+      ["mudflow","泥流"],
+      ["antidote","缓解方法；解毒剂"],
+      ["photography","摄影；摄影术"],
+      ["Victorian","英国维多利亚（女王）时代的"],
+      ["critic","评论家；批评者"],
+      ["sketch","画速写；素描；素描；草图"],
+      ["jot","草草记下"],
+      ["echo","附和；回响"],
+      ["thoughtful","深思的；关心的"],
+      ["capability","能力"],
+      ["layer","铺一层；表层；层"],
+      ["maximize","使增加到最大限度；最大化"],
+      ["closely","仔细地；密切地"],
+      ["unfiltered","未经过滤的"],
+      ["moustache","小胡子"],
+      ["musing","沉思；诉说想法"],
+      ["cherish","重视；珍视"],
+      ["goat","山羊"],
+      ["whisperer","驯动物的人"],
+      ["tap","轻拍；轻叩；轻敲"],
+      ["snugly","温暖舒适地"],
+      ["stripe","条纹；线条"],
+      ["striped","有条纹的"],
+      ["endure","持续存在；忍耐"],
+      ["quotation","引文；引语"],
+      ["sake","缘故；理由"],
+      ["obey","服从；遵守"],
+      ["disobey","不服从；违抗"],
+      ["spiky","带尖刺的；有刺的"],
+      ["chestnut","栗子；板栗"],
+      ["shell","（禽蛋、坚果、种子的）壳"],
+      ["birch","桦树；桦木"],
+      ["sway","摇摆；摇动"],
+      ["no more...than","和……一样不；根本不"],
+      ["get around","（消息、新闻）传开"],
+      ["for instance","例如"],
+      ["wash out","洗净；洗掉"],
+      ["pull up","（车辆）停下"],
+      ["as far as sb. is concerned","在某人看来"],
+      ["stumble upon/on/across","偶然发现（碰见）"],
+      ["tuck away","存放；收好"],
+      ["win out (over)","终于成功；胜出"],
+      ["bring up","提起（话题）"],
+      ["if not","甚至可能（更极端说法）"],
+      ["in real time","立刻；实时"],
+      ["touch up","修改；润色"],
+      ["get off the ground","开始获得成功；取得进展"],
+      ["bring back","使回忆起（想起）"],
+      ["follow in sb.'s footsteps","步某人后尘；继承事业"]
+    ],
+    "U3": [
+      ["drip","（液体）滴下，沥下"],
+      ["breathtaking","使人喘不过气来的；激动人心的，惊人的"],
+      ["fulfilment","成就感；充实感"],
+      ["joyful","欢乐的；令人高兴的"],
+      ["parallel","相似的；同时发生的；平行的"],
+      ["unparalleled","无比的；无双的；空前的"],
+      ["brutal","伤人的；不顾他人感受的；野蛮的；凶残的"],
+      ["honesty","诚实；正直；坦诚"],
+      ["unbearable","难以忍受的；承受不住的；无法容忍的"],
+      ["tease","戏弄；逗弄；拿…取笑"],
+      ["taunt","（用语言）挑衅，侮辱，嘲弄，奚落"],
+      ["tempt","诱惑；引诱；诱使；劝说；鼓励"],
+      ["loyal","忠贞的；忠实的；忠诚的"],
+      ["resist","忍住；按捺"],
+      ["celebration","庆祝；祝贺；颂扬；庆祝会"],
+      ["alongside","与…一起；与…同时；在（…）旁边"],
+      ["addiction","上瘾"],
+      ["distraction","娱乐；消遣；使人分心的事物"],
+      ["sunrise","日出；晨曦；朝霞；黎明；拂晓"],
+      ["graciously","有礼貌地，仁慈地，和蔼地，亲切地"],
+      ["weaken","(使) 虚弱；（使）变弱，削弱，减弱"],
+      ["bump","凸起；隆起；鼓包；碰；撞"],
+      ["foreshadow","预示；是…的预兆"],
+      ["sideline","(运动场的) 场边，边线；副业"],
+      ["permanently","永久地；长久地"],
+      ["shrink","退缩，畏缩；（使）缩小；（使）收缩"],
+      ["tackle","处理，对付（难题）"],
+      ["prospect","可能性；希望"],
+      ["curve","(道路、河流等的) 弯曲处；曲线；弧线"],
+      ["hurdle","栏架；障碍；困难"],
+      ["split","(非正式) 离婚，分手；(使) 破裂；产生分歧，分裂"],
+      ["crack","(使) 破裂；（使）裂开"],
+      ["cracked","有裂缝的"],
+      ["hike","徒步旅行，远足；徒步旅行，远足"],
+      ["botany","植物学"],
+      ["safekeeping","安全保管；妥善保管"],
+      ["hobbyist","爱好者"],
+      ["pine needle","松针；松叶"],
+      ["weave","织"],
+      ["merge","相融；融入；合并；融合"],
+      ["indistinguishable","难以分辨的；难以区分的"],
+      ["productivity","生产率；生产效率；生产力"],
+      ["venture","风险项目；风险投资；冒险事业"],
+      ["fragility","(形式) 脆弱，不稳定；易碎；易损坏"],
+      ["accessible","易得到的；易使用的；易到达的；易进入的"],
+      ["corporation","大型公司；企业集团"],
+      ["disposable","可使用的；一次性的；用完即弃的"],
+      ["amusement park","游乐场"],
+      ["emerge","兴起；开始被人所知；出现；浮现"],
+      ["privilege","特权；特殊待遇"],
+      ["wealthy","富人；富有的，有钱的"],
+      ["automatic","(装置或流程) 自动的"],
+      ["prosperity","发达；繁荣；昌盛"],
+      ["unrest","动荡；动乱；骚乱"],
+      ["shortage","短缺；不足；缺乏"],
+      ["recession","(经济) 衰退，萧条"],
+      ["discontented","不满的；不满足的；不愉快的"],
+      ["enjoyable","令人愉快的；令人快乐的"],
+      ["inevitable","必然的；不可避免的"],
+      ["equate","等同；同等看待"],
+      ["dual","双的；双重的；两部分的"],
+      ["duality","两重性"],
+      ["utopian","乌托邦的；空想完美主义的"],
+      ["side hustle","副业"],
+      ["regarding","关于"],
+      ["boundary","（不同情感、思想等的）分野，分界线；分界线；边界"],
+      ["meditative","冥想的；默想的；深思的；沉思的；思考的"],
+      ["paycheck","薪金；工资"],
+      ["ruin","毁坏；毁掉；糟蹋"],
+      ["purity","纯；纯洁；洁净；纯正；纯粹"],
+      ["enhance","改善；改进"],
+      ["by choice","选择的；自愿的"],
+      ["(all) to oneself","独自；独有"],
+      ["run out (of)","耗尽（某物）；（供应品）被耗尽"],
+      ["be sick (and tired) of","对某事感到厌倦 / 气愤"],
+      ["take sth. out on sb.","向（某人）发泄（不满）；拿（某人）出气"],
+      ["a bump in the road","前进中的（暂时）问题"],
+      ["move on","开始做（别的事）；换话题"],
+      ["stand on one's own (two) feet","自立；独立"],
+      ["by nature","生性；本质上"],
+      ["have a hard time doing sth.","做某事很难"],
+      ["lead sb. to do sth.","导致某人做某事"],
+      ["look to","指望；依靠"]
+    ],
+    "U4": [
+      ["generalization","(片面的) 概括，泛论"],
+      ["myth","(许多人相信的) 错误观念，荒诞说法"],
+      ["spouse","配偶"],
+      ["spousal","配偶的"],
+      ["frustrated","懊丧的；懊恼的；沮丧的"],
+      ["validity","符合逻辑；正当；正确"],
+      ["stem","源于；来自；由…引起；(植物的) 茎，梗，柄"],
+      ["forage","(为找到食物、补给等) 四处搜寻"],
+      ["millennium","一千年；千年期"],
+      ["instinctive","本能的；直觉的；天性的"],
+      ["mode","方式；方法；做法"],
+      ["nutrition","营养（作用）；滋养"],
+      ["nutritious","(食物) 有营养的，营养丰富的"],
+      ["edible","适宜食用的；（无毒而）可以吃的"],
+      ["discard","扔掉；弃置"],
+      ["laden","载满的；装满的"],
+      ["heritage","(文化) 遗产；传统"],
+      ["prehistoric","史前的；有历史记载以前的"],
+      ["acquisition","购置物；获得物；（知识、技能的）获得，习得"],
+      ["humid","（空气或气候）温暖潮湿的，湿热的"],
+      ["trait","（某人性格中的）特性，品质"],
+      ["tendency","趋势；趋向；倾向"],
+      ["anthropologist","人类学家"],
+      ["similarity","相似性；类似性；相似处"],
+      ["ancestor","祖先；祖宗"],
+      ["ancestral","祖先的；祖传的"],
+      ["inclined","有做某事的意向；倾向做某事"],
+      ["extended","较长时间的；延期的"],
+      ["empirical","以实验（经验）为依据的；经验主义的"],
+      ["justification","正当理由"],
+      ["inherit","经遗传获得（品质、身体特征等）；继承（金钱、财产等）"],
+      ["sensible","明智的；合理的；实际的；有判断力的"],
+      ["stereotype","模式化的思想；老一套；旧框框"],
+      ["prominence","重要；杰出；著名"],
+      ["sentiment","多愁善感；感情因素；意见；观点；感想"],
+      ["feminine","女性特有的；女性的"],
+      ["literary","文学的；文学上的"],
+      ["maternal","母性的；母亲般慈爱的"],
+      ["excessively","过度地；过多地"],
+      ["gender","性别"],
+      ["inequality","不平等；不平衡；不平均"],
+      ["bias","偏见；成见；偏心"],
+      ["periodical","期刊"],
+      ["publication","出版，发行；出版物"],
+      ["analyze","分析；剖析"],
+      ["identify","认出，识别（某人或某物）"],
+      ["confirmation","证实；证明"],
+      ["predictable","可预料的；可预见的"],
+      ["startling","异乎寻常的；令人惊奇的"],
+      ["distinctive","特有的；特别的；有特色的"],
+      ["identical","完全相同的；极为相似的"],
+      ["concerted","齐心协力的；一致的"],
+      ["discourse","（关于某主题的）演讲，论述，著述"],
+      ["quantitative","（数）量的；与数量有关的；定量的"],
+      ["representation","代理；代表"],
+      ["trivial","微不足道的；没有什么价值的"],
+      ["noticeable","显著的；显而易见的"],
+      ["disguise","掩蔽；掩饰；装扮；假扮"],
+      ["unconscious","（感情、思想等）无意识的，未意识到的；不省人事的"],
+      ["publisher","（书、报纸等的）出版者，出版商；出版社"],
+      ["pursue","追求；继续进行"],
+      ["discrimination","歧视"],
+      ["apply to","适用于；对…有效"],
+      ["at all costs/cost","不惜一切代价"],
+      ["straight away/off","立刻；马上"],
+      ["in terms of","谈及；就…而言；在…方面"],
+      ["with respect to","关于；就…而言"],
+      ["in line with","与…相似；与…水平一致"],
+      ["rise to prominence /fame/power, etc.","变得杰出、著名、强大等"],
+      ["at stake","待解决的；成问题的；处于危险中"]
+    ]
+  }
+};
+/* 音标 + 词性；词组无独立音标，音标留空，词性为 phr. */
+const wordMeta = {
+  /* ===== 课本一 U1 ===== */
+  "ambition":["/æmˈbɪʃn/","n."],
+  "ambitious":["/æmˈbɪʃəs/","adj."],
+  "someday":["/ˈsʌmdeɪ/","adv."],
+  "matter-of-factly":["/ˌmætər əv ˈfæktli/","adv."],
+  "biology":["/baɪˈɒlədʒi/","n."],
+  "resolve":["/rɪˈzɒlv/","v."],
+  "fiction":["/ˈfɪkʃn/","n."],
+  "freshman":["/ˈfreʃmən/","n."],
+  "pretend":["/prɪˈtend/","v."],
+  "desperate":["/ˈdespərət/","adj."],
+  "buddy":["/ˈbʌdi/","n."],
+  "entertaining":["/ˌentəˈteɪnɪŋ/","adj."],
+  "apologetic":["/əˌpɒləˈdʒetɪk/","adj."],
+  "attain":["/əˈteɪn/","v."],
+  "determination":["/dɪˌtɜːmɪˈneɪʃn/","n."],
+  "realistic":["/ˌriːəˈlɪstɪk/","adj."],
+  "ethologist":["/iˈθɒlədʒɪst/","n."],
+  "jungle":["/ˈdʒʌŋɡl/","n."],
+  "fated":["/ˈfeɪtɪd/","adj."],
+  "adventurous":["/ədˈventʃərəs/","adj."],
+  "exotic":["/ɪɡˈzɒtɪk/","adj."],
+  "string":["/strɪŋ/","n./v."],
+  "conflict":["/ˈkɒnflɪkt/","n."],
+  "whole-heartedly":["/ˌhəʊlˈhɑːtɪdli/","adv."],
+  "single-mindedly":["/ˌsɪŋɡlˈmaɪndɪdli/","adv."],
+  "greedy":["/ˈɡriːdi/","adj."],
+  "chaotic":["/keɪˈɒtɪk/","adj."],
+  "overdue":["/ˌəʊvəˈdjuː/","adj."],
+  "mature":["/məˈtʃʊə(r)/","adj."],
+  "assign":["/əˈsaɪn/","v."],
+  "pediatrician":["/ˌpiːdiəˈtrɪʃn/","n."],
+  "best-seller":["/ˌbestˈselə(r)/","n."],
+  "anymore":["/ˌeniˈmɔː(r)/","adv."],
+  "be sb.'s for the asking":["","phr."],
+  "hit it big":["","phr."],
+  "to tell (you) the truth":["","phr."],
+  "leave behind":["","phr."],
+  "sit back":["","phr."],
+  "for one reason or another":["","phr."],
+  "grab for":["","phr."],
+  "come to terms with":["","phr."],
+  "Secretary of State":["/ˈsekretri əv steɪt/","n."],
+  "strive":["/straɪv/","v."],
+  "best-selling":["/ˌbestˈselɪŋ/","adj."],
+  "appealing":["/əˈpiːlɪŋ/","adj."],
+  "tongue":["/tʌŋ/","n."],
+  "depression":["/dɪˈpreʃn/","n."],
+  "isolation":["/ˌaɪsəˈleɪʃn/","n."],
+  "employee":["/ɪmˈplɔɪiː/","n."],
+  "philosopher":["/fəˈlɒsəfə(r)/","n."],
+  "unfold":["/ʌnˈfəʊld/","v."],
+  "mindset":["/ˈmaɪndset/","n."],
+  "lessen":["/ˈlesn/","v."],
+  "emotional":["/ɪˈməʊʃənl/","adj."],
+  "perceive":["/pəˈsiːv/","v."],
+  "heroic":["/hɪˈrəʊɪk/","adj."],
+  "consistent":["/kənˈsɪstənt/","adj."],
+  "sustainable":["/səˈsteɪnəbl/","adj."],
+  "fitness":["/ˈfɪtnəs/","n."],
+  "creativity":["/ˌkriːeɪˈtɪvəti/","n."],
+  "marathon":["/ˈmærəθən/","n."],
+  "literally":["/ˈlɪtərəli/","adv."],
+  "overextend":["/ˌəʊvərɪkˈstend/","v."],
+  "obsess":["/əbˈses/","v."],
+  "maximum":["/ˈmæksɪməm/","adj./n."],
+  "workout":["/ˈwɜːkaʊt/","n."],
+  "unlike":["/ʌnˈlaɪk/","prep."],
+  "paradox":["/ˈpærədɒks/","n."],
+  "perform":["/pəˈfɔːm/","v."],
+  "chase":["/tʃeɪs/","v."],
+  "grounded":["/ˈɡraʊndɪd/","adj."],
+  "productive":["/prəˈdʌktɪv/","adj."],
+  "ethos":["/ˈiːθɒs/","n."],
+  "hold back":["","phr."],
+  "roll / trip off the tongue":["","phr."],
+  "be/get burned out":["","phr."],
+  "the here and now":["","phr."],
+  "come up short":["","phr."],
+  "add up":["","phr."],
+  "string together":["","phr."],
+  "prior to":["/ˈpraɪə tu/","phr."],
+  "at peace":["/ət piːs/","phr."],
+  "quite / just the opposite":["","phr."],
+  "run / be go counter to":["","phr."],
+
+  /* ===== 课本一 U2 ===== */
+  "dispute":["/dɪˈspjuːt/","n./v."],
+  "indisputable":["/ˌɪndɪˈspjuːtəbl/","adj."],
+  "explanation":["/ˌekspləˈneɪʃn/","n."],
+  "straightforward":["/ˌstreɪtˈfɔːwəd/","adj."],
+  "economics":["/ˌiːkəˈnɒmɪks/","n."],
+  "economy":["/ɪˈkɒnəmi/","n."],
+  "squeeze":["/skwiːz/","v."],
+  "engage":["/ɪnˈɡeɪdʒ/","v."],
+  "dominate":["/ˈdɒmɪneɪt/","v."],
+  "manufacture":["/ˌmænjuˈfæktʃə(r)/","v."],
+  "manufacturing":["/ˌmænjuˈfæktʃərɪŋ/","n."],
+  "harvest":["/ˈhɑːvɪst/","n./v."],
+  "ripe":["/raɪp/","adj."],
+  "infinite":["/ˈɪnfɪnət/","adj."],
+  "incoming":["/ˈɪnkʌmɪŋ/","adj."],
+  "mobile":["/ˈməʊbaɪl/","adj."],
+  "handle":["/ˈhændl/","v."],
+  "to-do list":["/təˈduː lɪst/","n."],
+  "inevitably":["/ɪnˈevɪtəbli/","adv."],
+  "overwhelm":["/ˌəʊvəˈwelm/","v."],
+  "finite":["/ˈfaɪnaɪt/","adj."],
+  "demonstrate":["/ˈdemənstreɪt/","v."],
+  "ironic":["/aɪˈrɒnɪk/","adj."],
+  "economist":["/ɪˈkɒnəmɪst/","n."],
+  "scarcity":["/ˈskeəsəti/","n."],
+  "commitment":["/kəˈmɪtmənt/","n."],
+  "priority":["/praɪˈɒrəti/","n."],
+  "prioritise":["/praɪˈɒrətaɪz/","v."],
+  "crucial":["/ˈkruːʃl/","adj."],
+  "infect":["/ɪnˈfekt/","v."],
+  "leisure":["/ˈleʒə(r)/","n."],
+  "recovery":["/rɪˈkʌvəri/","n."],
+  "epidemic":["/ˌepɪˈdemɪk/","n."],
+  "ultimate":["/ˈʌltɪmət/","adj."],
+  "status":["/ˈsteɪtəs/","n."],
+  "badge":["/bædʒ/","n."],
+  "indicator":["/ˈɪndɪkeɪtə(r)/","n."],
+  "absurd":["/əbˈsɜːd/","adj."],
+  "locksmith":["/ˈlɒksmɪθ/","n."],
+  "fee":["/fiː/","n."],
+  "complain":["/kəmˈpleɪn/","v."],
+  "regain":["/rɪˈɡeɪn/","v."],
+  "access":["/ˈækses/","n."],
+  "squeeze in":["","phr."],
+  "get through":["","phr."],
+  "weigh down":["","phr."],
+  "take on":["","phr."],
+  "end up":["","phr."],
+  "throw in":["","phr."],
+  "in part":["","phr."],
+  "stroll":["/strəʊl/","v."],
+  "leisurely":["/ˈleʒəli/","adj./adv."],
+  "ulcer":["/ˈʌlsə(r)/","n."],
+  "fingernail":["/ˈfɪŋɡəneɪl/","n."],
+  "abuse":["/əˈbjuːs/","n."],
+  "wimp":["/wɪmp/","n."],
+  "luggage":["/ˈlʌɡɪdʒ/","n."],
+  "practically":["/ˈpræktɪkli/","adv."],
+  "fuss":["/fʌs/","n."],
+  "crush":["/krʌʃ/","v."],
+  "self":["/self/","n."],
+  "conspiracy":["/kənˈspɪrəsi/","n."],
+  "airline":["/ˈeəlaɪn/","n."],
+  "embarrass":["/ɪmˈbærəs/","v."],
+  "embarrassment":["/ɪmˈbærəsmənt/","n."],
+  "embarrassed":["/ɪmˈbærəst/","adj."],
+  "corridor":["/ˈkɒrɪdɔː(r)/","n."],
+  "stumble":["/ˈstʌmbl/","v."],
+  "occupy":["/ˈɒkjupaɪ/","v."],
+  "unoccupied":["/ʌnˈɒkjupaɪd/","adj."],
+  "gut":["/ɡʌt/","n."],
+  "snap":["/snæp/","v."],
+  "lifetime":["/ˈlaɪftaɪm/","n."],
+  "take off":["","phr."],
+  "make a fuss (about sth.)":["","phr."],
+  "show up":["","phr."],
+  "make it":["","phr."],
+  "in advance (of sth.)":["","phr."],
+
+  /* ===== 课本一 U3 ===== */
+  "wrestle":["/ˈresl/","v."],
+  "outcome":["/ˈaʊtkʌm/","n."],
+  "tense":["/tens/","v./adj."],
+  "strain":["/streɪn/","v."],
+  "wrist":["/rɪst/","n."],
+  "grin":["/ɡrɪn/","v."],
+  "teen":["/tiːn/","n."],
+  "athletic":["/æθˈletɪk/","adj."],
+  "athleticism":["/æθˈletɪsɪzəm/","n."],
+  "gasp":["/ɡɑːsp/","v."],
+  "recall":["/rɪˈkɔːl/","v."],
+  "clip":["/klɪp/","v."],
+  "clipping":["/ˈklɪpɪŋ/","n."],
+  "underline":["/ˌʌndəˈlaɪn/","v."],
+  "helmet":["/ˈhelmɪt/","n."],
+  "grapple":["/ˈɡræpl/","v."],
+  "ritual":["/ˈrɪtʃuəl/","n."],
+  "competitive":["/kəmˈpetətɪv/","adj."],
+  "palm":["/pɑːm/","n."],
+  "twist":["/twɪst/","v."],
+  "wrap":["/ræp/","v."],
+  "grip":["/ɡrɪp/","n./v."],
+  "elbow":["/ˈelbəʊ/","n."],
+  "indentation":["/ˌɪndenˈteɪʃn/","n."],
+  "itchy":["/ˈɪtʃi/","adj."],
+  "defeat":["/dɪˈfiːt/","n."],
+  "yield":["/jiːld/","v."],
+  "steady":["/ˈstedi/","adj."],
+  "unsteadily":["/ʌnˈstedəli/","adv."],
+  "unexpected":["/ˌʌnɪkˈspektɪd/","adj."],
+  "handshake":["/ˈhændʃeɪk/","n."],
+  "suck":["/sʌk/","v."],
+  "brace":["/breɪs/","v."],
+  "embrace":["/ɪmˈbreɪs/","v./n."],
+  "throat":["/θrəʊt/","n."],
+  "sadness":["/ˈsædnəs/","n."],
+  "dresser":["/ˈdresə(r)/","n."],
+  "sling":["/slɪŋ/","v."],
+  "oversized":["/ˌəʊvəˈsaɪzd/","adj."],
+  "sunglasses":["/ˈsʌnɡlɑːsɪz/","n."],
+  "entire":["/ɪnˈtaɪə(r)/","adj."],
+  "porch":["/pɔːtʃ/","n."],
+  "carton":["/ˈkɑːtn/","n."],
+  "rewind":["/ˌriːˈwaɪnd/","v."],
+  "sip":["/sɪp/","v."],
+  "patio":["/ˈpætiəʊ/","n."],
+  "seagull":["/ˈsiːɡʌl/","n."],
+  "rail":["/reɪl/","n."],
+  "obligation":["/ˌɒblɪˈɡeɪʃn/","n."],
+  "reassure":["/ˌriːəˈʃʊə(r)/","v."],
+  "handwritten":["/ˌhændˈrɪtn/","adj."],
+  "shamelessly":["/ˈʃeɪmləsli/","adv."],
+  "drunk":["/drʌŋk/","adj."],
+  "thunderstorm":["/ˈθʌndəstɔːm/","n."],
+  "cuddle":["/ˈkʌdl/","v."],
+  "dependent":["/dɪˈpendənt/","adj."],
+  "pick up":["","phr."],
+  "work against":["","phr."],
+  "lift off":["","phr."],
+  "stay up":["","phr."],
+  "settle for":["","phr."],
+  "within walking distance":["","phr."],
+  "on one's mind":["","phr."],
+  "at the top of one's lungs":["","phr."],
+  "cuddle up":["","phr."],
+
+  /* ===== 课本一 U4 ===== */
+  "browse":["/braʊz/","v."],
+  "longing":["/ˈlɒŋɪŋ/","n."],
+  "aisle":["/aɪl/","n."],
+  "flick":["/flɪk/","v."],
+  "restless":["/ˈrestləs/","adj."],
+  "fatigue":["/fəˈtiːɡ/","n."],
+  "paralysis":["/pəˈræləsɪs/","n."],
+  "donkey":["/ˈdɒŋki/","n."],
+  "unable":["/ʌnˈeɪbl/","adj."],
+  "hay":["/heɪ/","n."],
+  "boast":["/bəʊst/","v."],
+  "fingertip":["/ˈfɪŋɡətɪp/","n."],
+  "confusion":["/kənˈfjuːʒn/","n."],
+  "replicate":["/ˈreplɪkeɪt/","v."],
+  "pension":["/ˈpenʃn/","n."],
+  "motivate":["/ˈməʊtɪveɪt/","v."],
+  "demotivate":["/ˌdiːˈməʊtɪveɪt/","v."],
+  "cyberspace":["/ˈsaɪbəspeɪs/","n."],
+  "stack":["/stæk/","v./n."],
+  "realm":["/relm/","n."],
+  "annoy":["/əˈnɔɪ/","v."],
+  "annoying":["/əˈnɔɪɪŋ/","adj."],
+  "dominance":["/ˈdɒmɪnəns/","n."],
+  "format":["/ˈfɔːmæt/","n."],
+  "boom":["/buːm/","n./v."],
+  "appeal":["/əˈpiːl/","n./v."],
+  "define":["/dɪˈfaɪn/","v."],
+  "lower":["/ˈləʊə(r)/","v."],
+  "approval":["/əˈpruːvl/","n."],
+  "fist":["/fɪst/","n."],
+  "high-rise":["/ˈhaɪraɪz/","adj."],
+  "dusk":["/dʌsk/","n."],
+  "trickle":["/ˈtrɪkl/","v."],
+  "scribble":["/ˈskrɪbl/","v."],
+  "arrow":["/ˈærəʊ/","n."],
+  "brainstorm":["/ˈbreɪnstɔːm/","n./v."],
+  "halfway":["/ˌhɑːfˈweɪ/","adj./adv."],
+  "consult":["/kənˈsʌlt/","v."],
+  "oyster":["/ˈɔɪstə(r)/","n."],
+  "argument":["/ˈɑːɡjumənt/","n."],
+  "management":["/ˈmænɪdʒmənt/","n."],
+  "straddle":["/ˈstrædl/","v."],
+  "invest":["/ɪnˈvest/","v."],
+  "existential":["/ˌeɡzɪˈstenʃl/","adj."],
+  "gratefully":["/ˈɡreɪtfəli/","adv."],
+  "executive":["/ɪɡˈzekjətɪv/","n."],
+  "educational":["/ˌedʒuˈkeɪʃənl/","adj."],
+  "abundant":["/əˈbʌndənt/","adj."],
+  "consultation":["/ˌkɒnslˈteɪʃn/","n."],
+  "assumption":["/əˈsʌmpʃn/","n."],
+  "necessity":["/nəˈsesəti/","n."],
+  "logically":["/ˈlɒdʒɪkli/","adv."],
+  "sacrifice":["/ˈsækrɪfaɪs/","v./n."],
+  "surrender":["/səˈrendə(r)/","v."],
+  "stuck":["/stʌk/","adj."],
+  "simultaneously":["/ˌsɪmlˈteɪniəsli/","adv."],
+  "contradictory":["/ˌkɒntrəˈdɪktəri/","adj."],
+  "sb. can't help but do sth. / can't help (doing) sth.":["","phr."],
+  "stick with":["","phr."],
+  "have sth. at one's fingertips":["","phr."],
+  "set in":["","phr."],
+  "the world is sb.'s oyster":["","phr."],
+  "fit in":["","phr."],
+  "in passing":["","phr."],
+  "by default":["","phr."],
+  "step in":["","phr."],
+
+  /* ===== 课本二 U1 ===== */
+  "entrepreneur":["/ˌɒntrəprəˈnɜː(r)/","n."],
+  "mistaken":["/mɪˈsteɪkən/","adj."],
+  "mistakenly":["/mɪˈsteɪkənli/","adv."],
+  "wormhole":["/ˈwɜːmhəʊl/","n."],
+  "sprawl":["/sprɔːl/","v."],
+  "wander":["/ˈwɒndə(r)/","v."],
+  "stall":["/stɔːl/","n."],
+  "spectrum":["/ˈspektrəm/","n."],
+  "cord":["/kɔːd/","n."],
+  "assemble":["/əˈsembl/","v."],
+  "amid":["/əˈmɪd/","prep."],
+  "glitter":["/ˈɡlɪtə(r)/","v."],
+  "glittering":["/ˈɡlɪtərɪŋ/","adj."],
+  "holdout":["/ˈhəʊldaʊt/","n."],
+  "clone":["/kləʊn/","v./n."],
+  "innovation":["/ˌɪnəˈveɪʃn/","n."],
+  "coexist":["/ˌkəʊɪɡˈzɪst/","v."],
+  "increasingly":["/ɪnˈkriːsɪŋli/","adv."],
+  "poised":["/pɔɪzd/","adj."],
+  "artificial":["/ˌɑːtɪˈfɪʃl/","adj."],
+  "artificial intelligence":["/ˌɑːtɪfɪʃl ɪnˈtelɪdʒəns/","n."],
+  "drone":["/drəʊn/","n./v."],
+  "miracle":["/ˈmɪrəkl/","n."],
+  "impetus":["/ˈɪmpɪtəs/","n."],
+  "unrecognizable":["/ˌʌnrekəɡˈnaɪzəbl/","adj."],
+  "reign":["/reɪn/","v."],
+  "supreme":["/suːˈpriːm/","adj."],
+  "sector":["/ˈsektə(r)/","n."],
+  "glimmer":["/ˈɡlɪmə(r)/","n."],
+  "accomplish":["/əˈkʌmplɪʃ/","v."],
+  "feat":["/fiːt/","n."],
+  "transform":["/trænsˈfɔːm/","v."],
+  "momentum":["/məˈmentəm/","n."],
+  "consecutive":["/kənˈsekjətɪv/","adj."],
+  "hub":["/hʌb/","n."],
+  "overnight":["/ˌəʊvəˈnaɪt/","adv."],
+  "impressively":["/ɪmˈpresɪvli/","adv."],
+  "burgeon":["/ˈbɜːdʒən/","v."],
+  "breakthrough":["/ˈbreɪkθruː/","n."],
+  "aerospace":["/ˈeərəʊspeɪs/","n."],
+  "profound":["/prəˈfaʊnd/","adj."],
+  "evolve":["/ɪˈvɒlv/","v."],
+  "envision":["/ɪnˈvɪʒn/","v."],
+  "consensus":["/kənˈsensəs/","n."],
+  "head-to-head":["/ˌhed təˈhed/","adj./adv."],
+  "ranking":["/ˈræŋkɪŋ/","n."],
+  "workforce":["/ˈwɜːkfɔːs/","n."],
+  "dogged":["/ˈdɒɡɪd/","adj."],
+  "packed with":["","phr."],
+  "for now":["","phr."],
+  "reign supreme":["","phr."],
+  "in the long / short / medium term":["","phr."],
+  "(it’s) no / small / little wonder (that)":["","phr."],
+  "millennial":["/mɪˈleniəl/","n."],
+  "reminisce":["/ˌremɪˈnɪs/","v."],
+  "regretfully":["/rɪˈɡretfəli/","adv."],
+  "remark":["/rɪˈmɑːk/","v./n."],
+  "phenomenon":["/fəˈnɒmɪnən/","n."],
+  "outpouring":["/ˈaʊtpɔːrɪŋ/","n."],
+  "spontaneous":["/spɒnˈteɪniəs/","adj."],
+  "amazement":["/əˈmeɪzmənt/","n."],
+  "hardship":["/ˈhɑːdʃɪp/","n."],
+  "downturn":["/ˈdaʊntɜːn/","n."],
+  "per annum":["/pər ˈænəm/","adv."],
+  "sole":["/səʊl/","adj."],
+  "capacity":["/kəˈpæsəti/","n."],
+  "youngster":["/ˈjʌŋstə(r)/","n."],
+  "sophisticated":["/səˈfɪstɪkeɪtɪd/","adj."],
+  "individualistic":["/ˌɪndɪˌvɪdʒuəˈlɪstɪk/","adj."],
+  "entrepreneurial":["/ˌɒntrəprəˈnɜːriəl/","adj."],
+  "confident":["/ˈkɒnfɪdənt/","adj."],
+  "daunting":["/ˈdɔːntɪŋ/","adj."],
+  "navigate":["/ˈnævɪɡeɪt/","v."],
+  "entitled":["/ɪnˈtaɪtld/","adj."],
+  "attribute":["/əˈtrɪbjuːt/","v."],
+  "savvy":["/ˈsævi/","adj./n."],
+  "progressive":["/prəˈɡresɪv/","adj."],
+  "deem":["/diːm/","v."],
+  "self-centered":["/ˌselfˈsentəd/","adj."],
+  "considerable":["/kənˈsɪdərəbl/","adj."],
+  "trendy":["/ˈtrendi/","adj."],
+  "craze":["/kreɪz/","n."],
+  "consumption":["/kənˈsʌmpʃn/","n."],
+  "forecast":["/ˈfɔːkɑːst/","n./v."],
+  "aspiration":["/ˌæspəˈreɪʃn/","n."],
+  "furthermore":["/ˌfɜːðəˈmɔː(r)/","adv."],
+  "e-commerce":["/ˈiː kɒmɜːs/","n."],
+  "other than":["","phr."],
+  "in / by contrast (to / with)":["","phr."],
+  "as compared to / with":["","phr."],
+  "speak to":["","phr."],
+
+  /* ===== 课本二 U2 ===== */
+  "passionate":["/ˈpæʃənət/","adj."],
+  "reunion":["/ˌriːˈjuːniən/","n."],
+  "singular":["/ˈsɪŋɡjələ(r)/","adj."],
+  "stern":["/stɜːn/","adj."],
+  "fretful":["/ˈfretfl/","adj."],
+  "refugee":["/ˌrefjuˈdʒiː/","n."],
+  "overloaded":["/ˌəʊvəˈləʊdɪd/","adj."],
+  "lifeboat":["/ˈlaɪfbəʊt/","n."],
+  "grasp":["/ɡrɑːsp/","v."],
+  "queue":["/kjuː/","v./n."],
+  "wherever":["/weərˈevə(r)/","adv."],
+  "orderly":["/ˈɔːdəli/","adj."],
+  "scramble":["/ˈskræmbl/","v."],
+  "aboard":["/əˈbɔːd/","prep./adv."],
+  "ignorant":["/ˈɪɡnərənt/","adj."],
+  "childlike":["/ˈtʃaɪldlaɪk/","adj."],
+  "impulse":["/ˈɪmpʌls/","n."],
+  "bounce":["/baʊns/","v."],
+  "exist":["/ɪɡˈzɪst/","v."],
+  "existence":["/ɪɡˈzɪstəns/","n."],
+  "endanger":["/ɪnˈdeɪndʒə(r)/","v."],
+  "reliably":["/rɪˈlaɪəbli/","adv."],
+  "charm":["/tʃɑːm/","n."],
+  "puzzle":["/ˈpʌzl/","v."],
+  "sniff":["/snɪf/","v."],
+  "tuck":["/tʌk/","v."],
+  "casual":["/ˈkæʒuəl/","adj."],
+  "serendipity":["/ˌserənˈdɪpəti/","n."],
+  "devour":["/dɪˈvaʊə(r)/","v."],
+  "snapshot":["/ˈsnæpʃɒt/","n."],
+  "fossil":["/ˈfɒsl/","n."],
+  "transition":["/trænˈzɪʃn/","n."],
+  "volcanic":["/vɒlˈkænɪk/","adj."],
+  "mudflow":["/ˈmʌdfləʊ/","n."],
+  "antidote":["/ˈæntidəʊt/","n."],
+  "photography":["/fəˈtɒɡrəfi/","n."],
+  "Victorian":["/vɪkˈtɔːriən/","adj."],
+  "critic":["/ˈkrɪtɪk/","n."],
+  "sketch":["/sketʃ/","v./n."],
+  "jot":["/dʒɒt/","v."],
+  "echo":["/ˈekəʊ/","v."],
+  "thoughtful":["/ˈθɔːtfl/","adj."],
+  "capability":["/ˌkeɪpəˈbɪləti/","n."],
+  "layer":["/ˈleɪə(r)/","v./n."],
+  "maximize":["/ˈmæksɪmaɪz/","v."],
+  "closely":["/ˈkləʊsli/","adv."],
+  "unfiltered":["/ʌnˈfɪltəd/","adj."],
+  "moustache":["/məˈstɑːʃ/","n."],
+  "musing":["/ˈmjuːzɪŋ/","n."],
+  "cherish":["/ˈtʃerɪʃ/","v."],
+  "goat":["/ɡəʊt/","n."],
+  "whisperer":["/ˈwɪspərə(r)/","n."],
+  "tap":["/tæp/","v./n."],
+  "snugly":["/ˈsnʌɡli/","adv."],
+  "stripe":["/straɪp/","n."],
+  "striped":["/straɪpt/","adj."],
+  "endure":["/ɪnˈdjʊə(r)/","v."],
+  "quotation":["/kwəʊˈteɪʃn/","n."],
+  "sake":["/seɪk/","n."],
+  "obey":["/əˈbeɪ/","v."],
+  "disobey":["/ˌdɪsəˈbeɪ/","v."],
+  "spiky":["/ˈspaɪki/","adj."],
+  "chestnut":["/ˈtʃesnʌt/","n."],
+  "shell":["/ʃel/","n."],
+  "birch":["/bɜːtʃ/","n."],
+  "sway":["/sweɪ/","v."],
+  "no more...than":["","phr."],
+  "get around":["","phr."],
+  "for instance":["","phr."],
+  "wash out":["","phr."],
+  "pull up":["","phr."],
+  "as far as sb. is concerned":["","phr."],
+  "stumble upon/on/across":["","phr."],
+  "tuck away":["","phr."],
+  "win out (over)":["","phr."],
+  "bring up":["","phr."],
+  "if not":["","phr."],
+  "in real time":["","phr."],
+  "touch up":["","phr."],
+  "get off the ground":["","phr."],
+  "bring back":["","phr."],
+  "follow in sb.'s footsteps":["","phr."],
+
+  /* ===== 课本二 U3 ===== */
+  "drip":["/drɪp/","v."],
+  "breathtaking":["/ˈbreθteɪkɪŋ/","adj."],
+  "fulfilment":["/fʊlˈfɪlmənt/","n."],
+  "joyful":["/ˈdʒɔɪfl/","adj."],
+  "parallel":["/ˈpærəlel/","adj."],
+  "unparalleled":["/ʌnˈpærəleld/","adj."],
+  "brutal":["/ˈbruːtl/","adj."],
+  "honesty":["/ˈɒnəsti/","n."],
+  "unbearable":["/ʌnˈbeərəbl/","adj."],
+  "tease":["/tiːz/","v."],
+  "taunt":["/tɔːnt/","v."],
+  "tempt":["/tempt/","v."],
+  "loyal":["/ˈlɔɪəl/","adj."],
+  "resist":["/rɪˈzɪst/","v."],
+  "celebration":["/ˌselɪˈbreɪʃn/","n."],
+  "alongside":["/əˌlɒŋˈsaɪd/","prep."],
+  "addiction":["/əˈdɪkʃn/","n."],
+  "distraction":["/dɪˈstrækʃn/","n."],
+  "sunrise":["/ˈsʌnraɪz/","n."],
+  "graciously":["/ˈɡreɪʃəsli/","adv."],
+  "weaken":["/ˈwiːkən/","v."],
+  "bump":["/bʌmp/","n./v."],
+  "foreshadow":["/fɔːˈʃædəʊ/","v."],
+  "sideline":["/ˈsaɪdlaɪn/","n."],
+  "permanently":["/ˈpɜːmənəntli/","adv."],
+  "shrink":["/ʃrɪŋk/","v."],
+  "tackle":["/ˈtækl/","v."],
+  "prospect":["/ˈprɒspekt/","n."],
+  "curve":["/kɜːv/","n."],
+  "hurdle":["/ˈhɜːdl/","n."],
+  "split":["/splɪt/","v./n."],
+  "crack":["/kræk/","v."],
+  "cracked":["/krækt/","adj."],
+  "hike":["/haɪk/","v./n."],
+  "botany":["/ˈbɒtəni/","n."],
+  "safekeeping":["/ˌseɪfˈkiːpɪŋ/","n."],
+  "hobbyist":["/ˈhɒbiɪst/","n."],
+  "pine needle":["/ˈpaɪn niːdl/","n."],
+  "weave":["/wiːv/","v."],
+  "merge":["/mɜːdʒ/","v."],
+  "indistinguishable":["/ˌɪndɪˈstɪŋɡwɪʃəbl/","adj."],
+  "productivity":["/ˌprɒdʌkˈtɪvəti/","n."],
+  "venture":["/ˈventʃə(r)/","n."],
+  "fragility":["/frəˈdʒɪləti/","n."],
+  "accessible":["/əkˈsesəbl/","adj."],
+  "corporation":["/ˌkɔːpəˈreɪʃn/","n."],
+  "disposable":["/dɪˈspəʊzəbl/","adj."],
+  "amusement park":["/əˈmjuːzmənt pɑːk/","n."],
+  "emerge":["/ɪˈmɜːdʒ/","v."],
+  "privilege":["/ˈprɪvəlɪdʒ/","n."],
+  "wealthy":["/ˈwelθi/","adj."],
+  "automatic":["/ˌɔːtəˈmætɪk/","adj."],
+  "prosperity":["/prɒˈsperəti/","n."],
+  "unrest":["/ʌnˈrest/","n."],
+  "shortage":["/ˈʃɔːtɪdʒ/","n."],
+  "recession":["/rɪˈseʃn/","n."],
+  "discontented":["/ˌdɪskənˈtentɪd/","adj."],
+  "enjoyable":["/ɪnˈdʒɔɪəbl/","adj."],
+  "inevitable":["/ɪnˈevɪtəbl/","adj."],
+  "equate":["/iˈkweɪt/","v."],
+  "dual":["/ˈdjuːəl/","adj."],
+  "duality":["/djuːˈæləti/","n."],
+  "utopian":["/juːˈtəʊpiən/","adj."],
+  "side hustle":["/ˈsaɪd hʌsl/","n."],
+  "regarding":["/rɪˈɡɑːdɪŋ/","prep."],
+  "boundary":["/ˈbaʊndri/","n."],
+  "meditative":["/ˈmedɪtətɪv/","adj."],
+  "paycheck":["/ˈpeɪtʃek/","n."],
+  "ruin":["/ˈruːɪn/","v."],
+  "purity":["/ˈpjʊərəti/","n."],
+  "enhance":["/ɪnˈhɑːns/","v."],
+  "by choice":["","phr."],
+  "(all) to oneself":["","phr."],
+  "run out (of)":["","phr."],
+  "be sick (and tired) of":["","phr."],
+  "take sth. out on sb.":["","phr."],
+  "a bump in the road":["","phr."],
+  "move on":["","phr."],
+  "stand on one's own (two) feet":["","phr."],
+  "by nature":["","phr."],
+  "have a hard time doing sth.":["","phr."],
+  "lead sb. to do sth.":["","phr."],
+  "look to":["","phr."],
+
+  /* ===== 课本二 U4 ===== */
+  "generalization":["/ˌdʒenrəlaɪˈzeɪʃn/","n."],
+  "myth":["/mɪθ/","n."],
+  "spouse":["/spaʊs/","n."],
+  "spousal":["/ˈspaʊzl/","adj."],
+  "frustrated":["/frʌˈstreɪtɪd/","adj."],
+  "validity":["/vəˈlɪdəti/","n."],
+  "stem":["/stem/","v./n."],
+  "forage":["/ˈfɒrɪdʒ/","v."],
+  "millennium":["/mɪˈleniəm/","n."],
+  "instinctive":["/ɪnˈstɪŋktɪv/","adj."],
+  "mode":["/məʊd/","n."],
+  "nutrition":["/njuˈtrɪʃn/","n."],
+  "nutritious":["/njuˈtrɪʃəs/","adj."],
+  "edible":["/ˈedəbl/","adj."],
+  "discard":["/dɪsˈkɑːd/","v."],
+  "laden":["/ˈleɪdn/","adj."],
+  "heritage":["/ˈherɪtɪdʒ/","n."],
+  "prehistoric":["/ˌpriːhɪˈstɒrɪk/","adj."],
+  "acquisition":["/ˌækwɪˈzɪʃn/","n."],
+  "humid":["/ˈhjuːmɪd/","adj."],
+  "trait":["/treɪt/","n."],
+  "tendency":["/ˈtendənsi/","n."],
+  "anthropologist":["/ˌænθrəˈpɒlədʒɪst/","n."],
+  "similarity":["/ˌsɪməˈlærəti/","n."],
+  "ancestor":["/ˈænsestə(r)/","n."],
+  "ancestral":["/ænˈsestrəl/","adj."],
+  "inclined":["/ɪnˈklaɪnd/","adj."],
+  "extended":["/ɪkˈstendɪd/","adj."],
+  "empirical":["/ɪmˈpɪrɪkl/","adj."],
+  "justification":["/ˌdʒʌstɪfɪˈkeɪʃn/","n."],
+  "inherit":["/ɪnˈherɪt/","v."],
+  "sensible":["/ˈsensəbl/","adj."],
+  "stereotype":["/ˈsteriətaɪp/","n."],
+  "prominence":["/ˈprɒmɪnəns/","n."],
+  "sentiment":["/ˈsentɪmənt/","n."],
+  "feminine":["/ˈfemənɪn/","adj."],
+  "literary":["/ˈlɪtərəri/","adj."],
+  "maternal":["/məˈtɜːnl/","adj."],
+  "excessively":["/ɪkˈsesɪvli/","adv."],
+  "gender":["/ˈdʒendə(r)/","n."],
+  "inequality":["/ˌɪnɪˈkwɒləti/","n."],
+  "bias":["/ˈbaɪəs/","n."],
+  "periodical":["/ˌpɪəriˈɒdɪkl/","n."],
+  "publication":["/ˌpʌblɪˈkeɪʃn/","n."],
+  "analyze":["/ˈænəlaɪz/","v."],
+  "identify":["/aɪˈdentɪfaɪ/","v."],
+  "confirmation":["/ˌkɒnfəˈmeɪʃn/","n."],
+  "predictable":["/prɪˈdɪktəbl/","adj."],
+  "startling":["/ˈstɑːtlɪŋ/","adj."],
+  "distinctive":["/dɪˈstɪŋktɪv/","adj."],
+  "identical":["/aɪˈdentɪkl/","adj."],
+  "concerted":["/kənˈsɜːtɪd/","adj."],
+  "discourse":["/ˈdɪskɔːs/","n."],
+  "quantitative":["/ˈkwɒntɪtətɪv/","adj."],
+  "representation":["/ˌreprɪzenˈteɪʃn/","n."],
+  "trivial":["/ˈtrɪviəl/","adj."],
+  "noticeable":["/ˈnəʊtɪsəbl/","adj."],
+  "disguise":["/dɪsˈɡaɪz/","v."],
+  "unconscious":["/ʌnˈkɒnʃəs/","adj."],
+  "publisher":["/ˈpʌblɪʃə(r)/","n."],
+  "pursue":["/pəˈsjuː/","v."],
+  "discrimination":["/dɪˌskrɪmɪˈneɪʃn/","n."],
+  "apply to":["","phr."],
+  "at all costs/cost":["","phr."],
+  "straight away/off":["","phr."],
+  "in terms of":["","phr."],
+  "with respect to":["","phr."],
+  "in line with":["","phr."],
+  "rise to prominence /fame/power, etc.":["","phr."],
+  "at stake":["","phr."]
+};
+
+/* ==================== 状态 ==================== */
+let wordList = [];
+let currentBook = "";
+let currentUnit = "";
+let currentUnitKey = "";
+let currentIndex = 0;
+let knownByUnit = {};
+let known = new Set();
+let favoriteSet = new Set();
+try {
+  const savedFavs = localStorage.getItem("word_app_favorites");
+  if (savedFavs) {
+    favoriteSet = new Set(JSON.parse(savedFavs));
+  }
+} catch (e) {
+  console.error("读取收藏失败", e);
+}
+let maskMode = 0; // 0=遮蔽中文(看英文想中文), 1=遮蔽英文(看中文想英文)
+const spellingData = {};
+
+const slider = document.getElementById("wordSlider");
+const bookSelect = document.getElementById("bookSelect");
+const unitSelect = document.getElementById("unitSelect");
+const unitInfo = document.getElementById("unitInfo");
+
+/* ==================== 侧边栏与单元加载 ==================== */
+function initSidebar() {
+  const books = Object.keys(wordBank);
+  bookSelect.innerHTML = books.map(b => `<option value="${b}">${b}</option>`).join("");
+  bookSelect.value = books[0];
+  updateUnitOptions();
+  const firstBook = bookSelect.value;
+  const firstUnit = Object.keys(wordBank[firstBook])[0];
+  unitSelect.value = firstUnit;
+  loadUnit(firstBook, firstUnit, 0);
+}
+
+function updateUnitOptions() {
+  const book = bookSelect.value;
+  const units = Object.keys(wordBank[book]);
+  unitSelect.innerHTML = units.map(u => `<option value="${u}">${u}</option>`).join("");
+}
+
+bookSelect.addEventListener("change", function () {
+  updateUnitOptions();
+  const book = bookSelect.value;
+  const unit = unitSelect.value;
+  loadUnit(book, unit, 0);
+});
+
+unitSelect.addEventListener("change", function () {
+  loadUnit(bookSelect.value, unitSelect.value, 0);
+});
+
+function loadUnit(book, unit, index) {
+  currentBook = book;
+  currentUnit = unit;
+  currentUnitKey = book + "|" + unit;
+  wordList = wordBank[book][unit].map(([en, cn]) => ({ en, cn }));
+  currentIndex = Math.max(0, Math.min(Number(index) || 0, wordList.length - 1));
+  if (!knownByUnit[currentUnitKey]) knownByUnit[currentUnitKey] = new Set();
+  known = knownByUnit[currentUnitKey];
+  slider.max = Math.max(1, wordList.length);
+  slider.value = currentIndex + 1;
+  bookSelect.value = book;
+  unitSelect.value = unit;
+  unitInfo.innerHTML = `当前：<b>${book} · ${unit}</b><br>共 ${wordList.length} 个词条（含词组）`;
+  render();
+}
+
+slider.addEventListener("input", function () {
+  currentIndex = Number(slider.value) - 1;
+  render();
+});
+
+/* ==================== 渲染 ==================== */
+function render() {
+  if (!wordList.length) return;
+  const w = wordList[currentIndex];
+  const elEn = document.getElementById("en");
+  const elCn = document.getElementById("cn");
+  elEn.innerText = w.en;
+  elCn.innerText = w.cn;
+  const meta = wordMeta[w.en] || ["", ""];
+  const elMeta = document.getElementById("meta");
+  elMeta.innerText = [meta[0], meta[1]].filter(Boolean).join("  ");
+
+  if (maskMode === 0) {
+    elCn.classList.add("hidden-cn");
+    elEn.classList.remove("hidden-en");
+    elMeta.classList.remove("hidden-en");
+  } else {
+    elEn.classList.add("hidden-en");
+    elCn.classList.remove("hidden-cn");
+    elMeta.classList.add("hidden-en");
+  }
+
+  document.getElementById("currentPos").innerText = `当前：第 ${currentIndex + 1} / ${wordList.length} 个单词`;
+  slider.value = currentIndex + 1;
+  updateProgress();
+
+  const favBtn = document.querySelector(".btn-pink");
+  if (favoriteSet.has(favoriteKey())) {
+    favBtn.innerText = "⭐ 已收藏";
+  } else {
+    favBtn.innerText = "⭐ 收藏";
+  }
+
+  updateKnowButton();
+
+  const spellingArea = document.getElementById("spellingArea");
+  spellingArea.classList.toggle("hidden-spelling", maskMode !== 1);
+  document.querySelector(".btn-spell").classList.toggle("hidden", maskMode !== 1);
+
+  renderFavoriteList();
+  renderSpelling();
+}
+
+function updateProgress() {
+  const total = wordList.length || 1;
+  document.getElementById("progressText").innerText = known.size + " / " + wordList.length;
+  document.getElementById("progressFill").style.width = (known.size / total * 100) + "%";
+}
+
+function updateKnowButton() {
+  const btn = document.querySelector(".btn-green");
+  if (btn) btn.innerText = known.has(currentIndex) ? "✅ 已记住" : "✅ 记住了";
+}
+
+function favoriteKey(idx = currentIndex) {
+  return `${currentBook}|${currentUnit}|${idx}`;
+}
+
+function spellKey() {
+  return `${currentUnitKey}|${currentIndex}`;
+}
+
+/* ==================== 收藏本 ==================== */
+function renderFavoriteList() {
+  const favDom = document.getElementById("favList");
+  if (favoriteSet.size === 0) {
+    favDom.innerHTML = `<div class="empty-fav">暂无收藏的单词</div>`;
+    return;
+  }
+  let html = "";
+  for (let key of favoriteSet) {
+    const [book, unit, idxStr] = key.split("|");
+    const idx = Number(idxStr);
+    const item = wordBank[book] && wordBank[book][unit] && wordBank[book][unit][idx];
+    if (!item) continue;
+    html += `<div class="fav-item" onclick="jumpToFavorite('${key}')">
+      <strong>${item[0]}</strong> — ${item[1]}
+      <span style="font-size:12px;color:#888;">（${book} ${unit}）</span>
+    </div>`;
+  }
+  favDom.innerHTML = html || `<div class="empty-fav">暂无收藏的单词</div>`;
+}
+
+function jumpToFavorite(key) {
+  const [book, unit, idxStr] = key.split("|");
+  loadUnit(book, unit, Number(idxStr));
+}
+
+function toggleFavorite() {
+  const key = favoriteKey();
+  if (favoriteSet.has(key)) favoriteSet.delete(key);
+  else favoriteSet.add(key);
+  
+  // 实时保存到 localStorage
+  localStorage.setItem("word_app_favorites", JSON.stringify(Array.from(favoriteSet)));
+  
+  render();
+}
+
+/* ==================== 功能按钮 ==================== */
+function showCn() {
+  const elEn = document.getElementById("en");
+  const elCn = document.getElementById("cn");
+  const elMeta = document.getElementById("meta");
+  if (maskMode === 0) {
+    elCn.classList.toggle("hidden-cn");
+  } else {
+    elEn.classList.toggle("hidden-en");
+    elMeta.classList.toggle("hidden-en");
+  }
+}
+
+function toggleMaskMode() {
+  maskMode = maskMode === 0 ? 1 : 0;
+  render();
+}
+
+function nextWord() {
+  currentIndex = (currentIndex + 1) % wordList.length;
+  render();
+  if (isSpellingMode()) focusFirstLetter();
+}
+
+function prevWord() {
+  currentIndex = (currentIndex - 1 + wordList.length) % wordList.length;
+  render();
+}
+
+function knowIt() {
+  known.add(currentIndex);
+  nextWord();
+}
+
+function resetAll() {
+  knownByUnit = {};
+  known = new Set();
+  knownByUnit[currentUnitKey] = known;
+  
+  favoriteSet.clear();
+  localStorage.removeItem("word_app_favorites"); // 清空本地收藏缓存
+  
+  for (const k in spellingData) delete spellingData[k];
+  currentIndex = 0;
+  maskMode = 0;
+  render();
+}
+
+function toggleDark() {
+  document.body.classList.toggle("dark");
+}
+
+/* ==================== 拼写填空 ==================== */
+function getLetters(idx) {
+  return wordList[idx].en.split("").filter(ch => /[A-Za-z]/.test(ch)).map(ch => ch.toLowerCase());
+}
+
+function buildTokens(en) {
+  const tokens = [];
+  for (const ch of en) {
+    if (/[A-Za-z]/.test(ch)) {
+      tokens.push({ type: "input" });
+    } else if (ch.trim() === "") {
+      tokens.push({ type: "fixed", ch: " " });
+    } else {
+      tokens.push({ type: "fixed", ch });
+    }
+  }
+  return tokens;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function renderSpelling() {
+  const row = document.getElementById("spellingRow");
+  const w = wordList[currentIndex];
+  const tokens = buildTokens(w.en);
+  const letters = getLetters(currentIndex);
+  const key = spellKey();
+  const typed = spellingData[key] ? spellingData[key].slice() : new Array(letters.length).fill("");
+
+  let html = "";
+  let li = 0;
+  let currentWordHtml = ""; // 暂存当前单词的 HTML
+
+  for (const t of tokens) {
+    // 如果遇到空格，说明一个单词结束，打包进 word-group
+    if (t.type === "fixed" && t.ch === " ") {
+      if (currentWordHtml) {
+        html += `<div class="word-group">${currentWordHtml}</div>`;
+        currentWordHtml = "";
+      }
+      continue; // 不再渲染原来的圆点，改为用 CSS gap 区分
+    } 
+    
+    // 其他固定字符（如连字符 -）
+    if (t.type === "fixed") {
+      currentWordHtml += `<span class="fixed-cell">${escapeHtml(t.ch)}</span>`;
+    } 
+    // 字母输入框
+    else {
+      const val = typed[li] || "";
+      const cls = val === "" ? "" : (String(val).toLowerCase() === letters[li] ? "correct" : "wrong");
+      currentWordHtml += `<div class="letter-cell ${cls}"><input maxlength="1" autocomplete="off" autocapitalize="off" spellcheck="false" data-li="${li}" value="${escapeHtml(val)}"></div>`;
+      li++;
+    }
+  }
+  
+  // 把最后剩下的单词组也加进去
+  if (currentWordHtml) {
+    html += `<div class="word-group">${currentWordHtml}</div>`;
+  }
+
+  row.innerHTML = html;
+  updateSpellMeta();
+}
+
+function updateSpellMeta() {
+  const letters = getLetters(currentIndex);
+  const typed = spellingData[spellKey()] || new Array(letters.length).fill("");
+  let correctCount = 0;
+  for (let i = 0; i < letters.length; i++) {
+    if (String(typed[i] || "").toLowerCase() === letters[i]) correctCount++;
+  }
+  document.getElementById("spellingTotal").innerText = letters.length;
+  document.getElementById("spellingDone").innerText = correctCount;
+
+  const allRight = isSpellingComplete();
+  if (allRight && !known.has(currentIndex)) {
+    known.add(currentIndex);
+    updateProgress();
+    updateKnowButton();
+  }
+  document.getElementById("spellingCheck").classList.toggle("show", allRight);
+}
+
+function isSpellingComplete() {
+  const letters = getLetters(currentIndex);
+  if (letters.length === 0) return false;
+  const typed = spellingData[spellKey()] || [];
+  return typed.length === letters.length && typed.every((c, i) => String(c || "").toLowerCase() === letters[i]);
+}
+
+function isSpellingMode() {
+  return maskMode === 1;
+}
+
+document.getElementById("spellingRow").addEventListener("input", function (e) {
+  const inp = e.target;
+  if (!inp || !inp.matches || !inp.matches("input")) return;
+  const li = Number(inp.dataset.li);
+  const letters = getLetters(currentIndex);
+  if (li < 0 || li >= letters.length) return;
+
+  const clean = inp.value.toLowerCase().replace(/[^a-z]/g, "");
+  if (inp.value !== clean) inp.value = clean;
+
+  const key = spellKey();
+  if (!spellingData[key]) spellingData[key] = new Array(letters.length).fill("");
+  spellingData[key][li] = clean;
+
+  const cell = inp.closest(".letter-cell");
+  cell.classList.remove("correct", "wrong");
+  if (clean === letters[li]) cell.classList.add("correct");
+  else if (clean !== "") cell.classList.add("wrong");
+
+  updateSpellMeta();
+
+  if (clean === letters[li]) {
+    const inputs = Array.from(document.querySelectorAll("#spellingRow input"));
+    if (li < inputs.length - 1) {
+      inputs[li + 1].focus();
+    }
+  }
+});
+
+document.getElementById("spellingRow").addEventListener("keydown", function (e) {
+  const inp = e.target;
+  if (!inp || !inp.matches || !inp.matches("input")) return;
+  if (e.key === "Backspace" && inp.value === "") {
+    e.preventDefault();
+    const inputs = Array.from(document.querySelectorAll("#spellingRow input"));
+    const i = Number(inp.dataset.li);
+    if (i > 0 && inputs[i - 1]) inputs[i - 1].focus();
+  }
+});
+
+document.addEventListener("keydown", function (e) {
+  if (e.key !== "Enter") return;
+  const active = document.activeElement;
+  if (active && (active.tagName === "BUTTON" || active.tagName === "TEXTAREA")) return;
+  if (!isSpellingMode()) return;
+  if (!isSpellingComplete()) return;
+  e.preventDefault();
+  nextWord();
+});
+
+function focusFirstLetter() {
+  const first = document.querySelector("#spellingRow input");
+  if (first) first.focus();
+}
+
+function clearSpelling() {
+  delete spellingData[spellKey()];
+  renderSpelling();
+  focusFirstLetter();
+}
+
+/* ==================== 启动 ==================== */
+initSidebar();
+</script>
+</body>
+</html>
