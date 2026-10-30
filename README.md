@@ -3,7 +3,7 @@
 这是一个基于原生 HTML/CSS/JS 编写的轻量级单词背诵卡片网页。无需安装任何软件，打开浏览器即用。
 
 ## 🌐 在线访问
-点击这里访问：[你的专属网址](https://你的用户名.github.io/word-memorizer/)
+点击这里访问：[专属网址]([https://你的用户名.github.io/word-memorizer/](https://backfired-www.github.io/word-memorizer/))
 
 ## ✨ 功能特色
 - **多教材切换**：支持课本一、课本二及不同单元的自由切换。
