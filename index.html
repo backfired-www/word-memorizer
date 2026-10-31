@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>单词背诵 · 多单元版</title>
+<title>单词背诵</title>
 <style>
   .word-meta{
   font-size:15px;color:var(--muted);margin:-12px 0 18px;
@@ -196,7 +196,7 @@
 
     <div class="btns">
       <button class="btn-gray" onclick="prevWord()">上一个</button>
-      <button class="btn-blue" onclick="showCn()">显示释义</button>
+      <button class="btn-blue btn-meaning" onclick="showCn()">👁 释义</button>
       <button class="btn-orange" onclick="toggleMaskMode()">切换模式</button>
       <button class="btn-blue" onclick="nextWord()">下一个</button>
       <button class="btn-gray btn-spell" onclick="clearSpelling()">🧹 清空拼写</button>
@@ -213,11 +213,7 @@
 </div>
 
 <script>
-/* ==================== 词库 ====================
-   数据格式：[英文, 中文]
-   已按课本、单元分组；已删除明显人名、地名等专有名词条目。
-   注意：课本一在前，课本二在后，以满足“先第一本书再第二本书”的顺序。
-*/
+/* ==================== 词库 ==================== */
 const wordBank = {
   "课本一": {
     "U1": [
@@ -861,7 +857,6 @@ const wordBank = {
 };
 /* 音标 + 词性；词组无独立音标，音标留空，词性为 phr. */
 const wordMeta = {
-  /* ===== 课本一 U1 ===== */
   "ambition":["/æmˈbɪʃn/","n."],
   "ambitious":["/æmˈbɪʃəs/","adj."],
   "someday":["/ˈsʌmdeɪ/","adv."],
@@ -946,8 +941,6 @@ const wordMeta = {
   "at peace":["/ət piːs/","phr."],
   "quite / just the opposite":["","phr."],
   "run / be go counter to":["","phr."],
-
-  /* ===== 课本一 U2 ===== */
   "dispute":["/dɪˈspjuːt/","n./v."],
   "indisputable":["/ˌɪndɪˈspjuːtəbl/","adj."],
   "explanation":["/ˌekspləˈneɪʃn/","n."],
@@ -1026,8 +1019,6 @@ const wordMeta = {
   "show up":["","phr."],
   "make it":["","phr."],
   "in advance (of sth.)":["","phr."],
-
-  /* ===== 课本一 U3 ===== */
   "wrestle":["/ˈresl/","v."],
   "outcome":["/ˈaʊtkʌm/","n."],
   "tense":["/tens/","v./adj."],
@@ -1093,8 +1084,6 @@ const wordMeta = {
   "on one's mind":["","phr."],
   "at the top of one's lungs":["","phr."],
   "cuddle up":["","phr."],
-
-  /* ===== 课本一 U4 ===== */
   "browse":["/braʊz/","v."],
   "longing":["/ˈlɒŋɪŋ/","n."],
   "aisle":["/aɪl/","n."],
@@ -1161,8 +1150,6 @@ const wordMeta = {
   "in passing":["","phr."],
   "by default":["","phr."],
   "step in":["","phr."],
-
-  /* ===== 课本二 U1 ===== */
   "entrepreneur":["/ˌɒntrəprəˈnɜː(r)/","n."],
   "mistaken":["/mɪˈsteɪkən/","adj."],
   "mistakenly":["/mɪˈsteɪkənli/","adv."],
@@ -1254,8 +1241,6 @@ const wordMeta = {
   "in / by contrast (to / with)":["","phr."],
   "as compared to / with":["","phr."],
   "speak to":["","phr."],
-
-  /* ===== 课本二 U2 ===== */
   "passionate":["/ˈpæʃənət/","adj."],
   "reunion":["/ˌriːˈjuːniən/","n."],
   "singular":["/ˈsɪŋɡjələ(r)/","adj."],
@@ -1338,8 +1323,6 @@ const wordMeta = {
   "get off the ground":["","phr."],
   "bring back":["","phr."],
   "follow in sb.'s footsteps":["","phr."],
-
-  /* ===== 课本二 U3 ===== */
   "drip":["/drɪp/","v."],
   "breathtaking":["/ˈbreθteɪkɪŋ/","adj."],
   "fulfilment":["/fʊlˈfɪlmənt/","n."],
@@ -1423,8 +1406,6 @@ const wordMeta = {
   "have a hard time doing sth.":["","phr."],
   "lead sb. to do sth.":["","phr."],
   "look to":["","phr."],
-
-  /* ===== 课本二 U4 ===== */
   "generalization":["/ˌdʒenrəlaɪˈzeɪʃn/","n."],
   "myth":["/mɪθ/","n."],
   "spouse":["/spaʊs/","n."],
@@ -1517,6 +1498,15 @@ try {
 let maskMode = 0; // 0=遮蔽中文(看英文想中文), 1=遮蔽英文(看中文想英文)
 const spellingData = {};
 
+/* 新增：释义显示常开 / 常关闭（持久化） */
+let showMeaningAlways = false;
+try {
+  const savedShow = localStorage.getItem("word_app_show_meaning");
+  if (savedShow !== null) showMeaningAlways = savedShow === "1";
+} catch (e) {
+  console.error("读取释义设置失败", e);
+}
+
 const slider = document.getElementById("wordSlider");
 const bookSelect = document.getElementById("bookSelect");
 const unitSelect = document.getElementById("unitSelect");
@@ -1585,14 +1575,18 @@ function render() {
   elMeta.innerText = [meta[0], meta[1]].filter(Boolean).join("  ");
 
   if (maskMode === 0) {
-    elCn.classList.add("hidden-cn");
+    // 看英文想中文：中文是否显示，完全由「释义：常开 / 常关闭」决定
     elEn.classList.remove("hidden-en");
     elMeta.classList.remove("hidden-en");
+    elCn.classList.toggle("hidden-cn", !showMeaningAlways);
   } else {
+    // 看中文拼英文：中文始终显示，英文遮蔽
     elEn.classList.add("hidden-en");
-    elCn.classList.remove("hidden-cn");
     elMeta.classList.add("hidden-en");
+    elCn.classList.remove("hidden-cn");
   }
+
+  updateMeaningButton();
 
   document.getElementById("currentPos").innerText = `当前：第 ${currentIndex + 1} / ${wordList.length} 个单词`;
   slider.value = currentIndex + 1;
@@ -1624,6 +1618,13 @@ function updateProgress() {
 function updateKnowButton() {
   const btn = document.querySelector(".btn-green");
   if (btn) btn.innerText = known.has(currentIndex) ? "✅ 已记住" : "✅ 记住了";
+}
+
+/* 更新「释义」按钮文案 */
+function updateMeaningButton() {
+  const btn = document.querySelector(".btn-meaning");
+  if (!btn) return;
+  btn.innerText = showMeaningAlways ? "👁 释义" : "👁 释义";
 }
 
 function favoriteKey(idx = currentIndex) {
@@ -1672,16 +1673,15 @@ function toggleFavorite() {
 }
 
 /* ==================== 功能按钮 ==================== */
+/* 改为：切换「释义常开 / 常关闭」，并持久保存，切词后也不会重置 */
 function showCn() {
-  const elEn = document.getElementById("en");
-  const elCn = document.getElementById("cn");
-  const elMeta = document.getElementById("meta");
-  if (maskMode === 0) {
-    elCn.classList.toggle("hidden-cn");
-  } else {
-    elEn.classList.toggle("hidden-en");
-    elMeta.classList.toggle("hidden-en");
+  showMeaningAlways = !showMeaningAlways;
+  try {
+    localStorage.setItem("word_app_show_meaning", showMeaningAlways ? "1" : "0");
+  } catch (e) {
+    console.error("保存释义设置失败", e);
   }
+  render();
 }
 
 function toggleMaskMode() {
