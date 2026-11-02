@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>小测单词背诵</title>
+<title>单词背诵</title>
 <style>
   .word-meta{
   font-size:15px;color:var(--muted);margin:-12px 0 18px;
@@ -190,7 +190,7 @@
           <span class="spelling-check" id="spellingCheck"></span>
         </div>
         <div class="spelling-row" id="spellingRow"></div>
-        <div class="spelling-hint">全部填对后按 <kbd>Enter</kbd> 自动进入下一个单词</div>
+        <div class="spelling-hint">全部填对后按 <kbd>Enter</kbd> 自动进入下一个单词 · 按 <kbd>空格</kbd> 显示/隐藏英文答案 · 按 <kbd>←</kbd> <kbd>→</kbd> 切换单词</div>
       </div>
     </div>
 
@@ -1506,6 +1506,14 @@ try {
 } catch (e) {
   console.error("读取释义设置失败", e);
 }
+/* 新增：拼写模式下英文（答案）是否显示，由按钮控制（持久化） */
+let showEnInSpell = false;
+try {
+  const savedEn = localStorage.getItem("word_app_show_en_in_spell");
+  if (savedEn !== null) showEnInSpell = savedEn === "1";
+} catch (e) {
+  console.error("读取英文显示设置失败", e);
+}
 
 const slider = document.getElementById("wordSlider");
 const bookSelect = document.getElementById("bookSelect");
@@ -1575,14 +1583,14 @@ function render() {
   elMeta.innerText = [meta[0], meta[1]].filter(Boolean).join("  ");
 
   if (maskMode === 0) {
-    // 看英文想中文：中文是否显示，完全由「释义：常开 / 常关闭」决定
+    // 看英文想中文：中文是否显示由「释义」设置决定
     elEn.classList.remove("hidden-en");
     elMeta.classList.remove("hidden-en");
     elCn.classList.toggle("hidden-cn", !showMeaningAlways);
   } else {
-    // 看中文拼英文：中文始终显示，英文遮蔽
-    elEn.classList.add("hidden-en");
-    elMeta.classList.add("hidden-en");
+    // 看中文拼英文：中文始终显示作为拼写提示，英文/音标由按钮控制显示或隐藏
+    elEn.classList.toggle("hidden-en", !showEnInSpell);
+    elMeta.classList.toggle("hidden-en", !showEnInSpell);
     elCn.classList.remove("hidden-cn");
   }
 
@@ -1620,11 +1628,15 @@ function updateKnowButton() {
   if (btn) btn.innerText = known.has(currentIndex) ? "✅ 已记住" : "✅ 记住了";
 }
 
-/* 更新「释义」按钮文案 */
+/* 更新「释义」按钮文案：普通模式控制中文，拼写模式控制英文 */
 function updateMeaningButton() {
   const btn = document.querySelector(".btn-meaning");
   if (!btn) return;
-  btn.innerText = showMeaningAlways ? "👁 释义" : "👁 释义";
+  if (maskMode === 0) {
+    btn.innerText = showMeaningAlways ? "🙈 隐藏释义" : "👁 释义";
+  } else {
+    btn.innerText = showEnInSpell ? "🙈 隐藏英文" : "👁 显示英文";
+  }
 }
 
 function favoriteKey(idx = currentIndex) {
@@ -1673,15 +1685,39 @@ function toggleFavorite() {
 }
 
 /* ==================== 功能按钮 ==================== */
-/* 改为：切换「释义常开 / 常关闭」，并持久保存，切词后也不会重置 */
+/* 普通模式：切换「释义」常开/常关；拼写模式：切换英文（答案）显示/隐藏 */
 function showCn() {
-  showMeaningAlways = !showMeaningAlways;
-  try {
-    localStorage.setItem("word_app_show_meaning", showMeaningAlways ? "1" : "0");
-  } catch (e) {
-    console.error("保存释义设置失败", e);
+  if (maskMode === 0) {
+    showMeaningAlways = !showMeaningAlways;
+    try {
+      localStorage.setItem("word_app_show_meaning", showMeaningAlways ? "1" : "0");
+    } catch (e) {
+      console.error("保存释义设置失败", e);
+    }
+  } else {
+    showEnInSpell = !showEnInSpell;
+    try {
+      localStorage.setItem("word_app_show_en_in_spell", showEnInSpell ? "1" : "0");
+    } catch (e) {
+      console.error("保存英文显示设置失败", e);
+    }
   }
   render();
+}
+
+/* 空格键：在拼写模式下切换英文（答案）的显示/隐藏，不重绘输入框，保持焦点 */
+function toggleEnInSpellBySpace() {
+  showEnInSpell = !showEnInSpell;
+  try {
+    localStorage.setItem("word_app_show_en_in_spell", showEnInSpell ? "1" : "0");
+  } catch (e) {
+    console.error("保存英文显示设置失败", e);
+  }
+  const elEn = document.getElementById("en");
+  const elMeta = document.getElementById("meta");
+  elEn.classList.toggle("hidden-en", !showEnInSpell);
+  elMeta.classList.toggle("hidden-en", !showEnInSpell);
+  updateMeaningButton();
 }
 
 function toggleMaskMode() {
@@ -1698,6 +1734,7 @@ function nextWord() {
 function prevWord() {
   currentIndex = (currentIndex - 1 + wordList.length) % wordList.length;
   render();
+  if (isSpellingMode()) focusFirstLetter();
 }
 
 function knowIt() {
@@ -1716,6 +1753,12 @@ function resetAll() {
   for (const k in spellingData) delete spellingData[k];
   currentIndex = 0;
   maskMode = 0;
+  showEnInSpell = false;
+  try {
+    localStorage.removeItem("word_app_show_en_in_spell");
+  } catch (e) {
+    console.error("清除英文显示设置失败", e);
+  }
   render();
 }
 
@@ -1868,6 +1911,35 @@ document.addEventListener("keydown", function (e) {
   if (!isSpellingComplete()) return;
   e.preventDefault();
   nextWord();
+});
+
+/* 空格键：拼写模式下显示/隐藏英文答案 */
+document.addEventListener("keydown", function (e) {
+  if (e.key !== " " && e.code !== "Space") return;
+  if (e.isComposing) return;
+  if (!isSpellingMode()) return;
+
+  const active = document.activeElement;
+  if (active) {
+    if (active.tagName === "BUTTON" || active.tagName === "TEXTAREA" || active.tagName === "SELECT") return;
+    if (active.tagName === "INPUT" && active.type !== "text") return;
+  }
+
+  e.preventDefault();
+  toggleEnInSpellBySpace();
+});
+
+/* 左右方向键：切换到上一个 / 下一个单词 */
+document.addEventListener("keydown", function (e) {
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  if (e.isComposing) return;
+
+  const active = document.activeElement;
+  if (active && (active.tagName === "TEXTAREA" || active.tagName === "SELECT")) return;
+
+  e.preventDefault();
+  if (e.key === "ArrowLeft") prevWord();
+  else nextWord();
 });
 
 function focusFirstLetter() {
